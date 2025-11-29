@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LC 1229: Meeting Scheduler - Interactive Lesson</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #c4b5fd 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-purple-200 border-2 border-purple-400 overflow-hidden shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-purple-600 text-2xl">calendar_month</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <p class="text-stone-500 text-sm">LC 1229: Meeting Scheduler</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Card -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] min-h-[75vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Progress Bar -->
+        <div class="h-2 bg-stone-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-purple-400 to-violet-600 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 flex flex-col items-center justify-center p-8 2xl:p-16 text-center overflow-auto">
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="border-t border-stone-200 px-8 py-4 flex justify-between items-center bg-stone-50">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 px-6 py-2 rounded-lg font-bold hover:bg-stone-200 transition disabled:opacity-50">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            
+            <div id="dots-container" class="flex gap-2"></div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-purple-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 11;
+        let walkStep = 0;
+
+        const steps = [
+            {
+                // 0. Intro
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-purple-100 px-4 py-2 rounded-full text-purple-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">deployed_code</span> LeetCode Problem
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold text-stone-800 mb-6">LC 1229: Meeting Scheduler</h1>
+                        <p class="text-xl text-stone-600 mb-8">Finding common meeting time with a <strong>duration constraint</strong>!</p>
+                        <div class="bg-stone-100 p-6 rounded-2xl inline-block">
+                            <span class="text-stone-500">Difficulty:</span>
+                            <span class="ml-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full font-bold">Medium</span>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. Problem Statement
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl text-left">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center">Problem Statement</h2>
+                        
+                        <div class="bg-stone-50 p-8 rounded-2xl border border-stone-200 mb-8">
+                            <p class="text-lg text-stone-700 leading-relaxed">
+                                Given two people's availability as <code class="bg-stone-200 px-2 py-1 rounded">slots1</code> and 
+                                <code class="bg-stone-200 px-2 py-1 rounded">slots2</code>, and a meeting 
+                                <code class="bg-stone-200 px-2 py-1 rounded">duration</code>, return the 
+                                <strong class="text-purple-600">earliest time slot</strong> that works for both people.
+                            </p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl border-2 border-green-200 shadow-sm">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-3">Example 1 ✓</div>
+                                <div class="font-mono text-xs">
+                                    <div class="text-stone-500">slots1: [[10,50],[60,120],[140,210]]</div>
+                                    <div class="text-stone-500">slots2: [[0,15],[60,70]]</div>
+                                    <div class="text-stone-500">duration: 8</div>
+                                    <div class="text-green-600 font-bold mt-2">Output: [60, 68]</div>
+                                </div>
+                                <p class="text-xs text-stone-500 mt-2">Common slot [60,70] is 10 mins, ≥ 8 ✓</p>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl border-2 border-red-200 shadow-sm">
+                                <div class="text-sm text-red-600 font-bold uppercase mb-3">Example 2 ✗</div>
+                                <div class="font-mono text-xs">
+                                    <div class="text-stone-500">slots1: [[10,50],[60,120],[140,210]]</div>
+                                    <div class="text-stone-500">slots2: [[0,15],[60,70]]</div>
+                                    <div class="text-stone-500">duration: 12</div>
+                                    <div class="text-red-600 font-bold mt-2">Output: []</div>
+                                </div>
+                                <p class="text-xs text-stone-500 mt-2">Common slot [60,70] is only 10 mins < 12</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. Key Difference from LC 986
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Differences from LC 986</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8 mb-8">
+                            <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200">
+                                <div class="text-blue-600 font-bold text-lg mb-4">LC 986</div>
+                                <ul class="text-left text-stone-700 space-y-2">
+                                    <li>✓ Input is sorted</li>
+                                    <li>✓ Find ALL intersections</li>
+                                    <li>✓ No duration requirement</li>
+                                    <li>✓ Return list of all</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-200">
+                                <div class="text-purple-600 font-bold text-lg mb-4">LC 1229</div>
+                                <ul class="text-left text-stone-700 space-y-2">
+                                    <li>⚠️ <strong>May NOT be sorted!</strong></li>
+                                    <li>⚠️ Find <strong>FIRST</strong> valid slot</li>
+                                    <li>⚠️ Must be ≥ <strong>duration</strong></li>
+                                    <li>⚠️ Return <strong>early</strong> when found</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-red-50 p-4 rounded-xl border border-red-200">
+                            <p class="text-red-800">
+                                <strong>⚠️ Critical:</strong> You MUST sort both lists first! The input is NOT guaranteed to be sorted.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. The Modified Pattern
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Modified Pattern</h2>
+                        
+                        <div class="bg-stone-900 text-white p-8 rounded-2xl text-left font-mono">
+                            <div class="text-purple-400 mb-4 text-lg font-bold">MEETING SCHEDULER PATTERN</div>
+                            <div class="space-y-3 text-sm">
+                                <div class="bg-red-900/30 p-3 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center font-bold shrink-0">0</span>
+                                    <span><strong>SORT</strong> both lists by start time!</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center font-bold shrink-0">1</span>
+                                    <span>TWO POINTERS: i, j = 0, 0</span>
+                                </div>
+                                <div class="bg-amber-900/30 p-3 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center font-bold shrink-0">2</span>
+                                    <span>FIND: start = max(...), end = min(...)</span>
+                                </div>
+                                <div class="bg-green-900/30 p-3 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center font-bold shrink-0">3</span>
+                                    <span>CHECK: if end - start ≥ duration → <strong>RETURN!</strong></span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center font-bold shrink-0">4</span>
+                                    <span>MOVE: pointer whose interval ends first</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. Interactive Walkthrough
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Step-by-Step Walkthrough</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="font-mono text-sm mb-6 text-stone-700">
+                                slots1 = [[10,50], [60,120], [140,210]]<br>
+                                slots2 = [[0,15], [60,70]]<br>
+                                duration = 8
+                            </div>
+                            
+                            <div id="walk-display" class="bg-white p-6 rounded-xl min-h-[150px] flex items-center justify-center mb-6">
+                                <p class="text-stone-400">Click "Step" to begin...</p>
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetWalk()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200">Reset</button>
+                                <button onclick="nextWalk()" class="px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg flex items-center gap-2">
+                                    Step <span class="material-symbols-outlined">play_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. Why Return [start, start+duration]?
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-amber-100 px-4 py-2 rounded-full text-amber-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">lightbulb</span> Important Detail
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Return [start, start + duration]</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-6">
+                            <p class="text-lg text-stone-700 mb-6">Why not just return [start, end]?</p>
+                            
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="bg-red-50 p-4 rounded-xl border-2 border-red-200">
+                                    <div class="text-red-600 font-bold mb-2">❌ Wrong</div>
+                                    <div class="font-mono text-sm">
+                                        Intersection: [60, 70]<br>
+                                        Duration: 8<br>
+                                        Return: [60, 70]
+                                    </div>
+                                    <p class="text-xs text-red-600 mt-2">Gives 10 mins, not exactly 8!</p>
+                                </div>
+                                
+                                <div class="bg-green-50 p-4 rounded-xl border-2 border-green-200">
+                                    <div class="text-green-600 font-bold mb-2">✓ Correct</div>
+                                    <div class="font-mono text-sm">
+                                        Intersection: [60, 70]<br>
+                                        Duration: 8<br>
+                                        Return: [60, 68]
+                                    </div>
+                                    <p class="text-xs text-green-600 mt-2">Exactly 8 mins, earliest possible!</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                            <p class="text-purple-800">
+                                <strong>Key:</strong> Return a slot of <em>exactly</em> the required duration, starting as early as possible.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Complete Solution
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complete Solution</h2>
+                        
+                        <div class="bg-stone-900 rounded-2xl p-6 text-left overflow-x-auto">
+                            <pre class="text-sm text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-yellow-400">minAvailableDuration</span>(slots1, slots2, duration):
+    <span class="text-gray-500"># IMPORTANT: Sort first!</span>
+    slots1.<span class="text-blue-400">sort</span>(key=<span class="text-purple-400">lambda</span> x: x[<span class="text-green-400">0</span>])
+    slots2.<span class="text-blue-400">sort</span>(key=<span class="text-purple-400">lambda</span> x: x[<span class="text-green-400">0</span>])
+    
+    i, j = <span class="text-green-400">0</span>, <span class="text-green-400">0</span>
+    
+    <span class="text-purple-400">while</span> i < <span class="text-blue-400">len</span>(slots1) <span class="text-purple-400">and</span> j < <span class="text-blue-400">len</span>(slots2):
+        A = slots1[i]
+        B = slots2[j]
+        
+        <span class="text-gray-500"># Find intersection</span>
+        start = <span class="text-blue-400">max</span>(A[<span class="text-green-400">0</span>], B[<span class="text-green-400">0</span>])
+        end = <span class="text-blue-400">min</span>(A[<span class="text-green-400">1</span>], B[<span class="text-green-400">1</span>])
+        
+        <span class="text-gray-500"># Check if long enough</span>
+        <span class="text-purple-400">if</span> end - start >= duration:
+            <span class="text-yellow-400">return</span> [start, start + duration]
+        
+        <span class="text-gray-500"># Move pointer with smaller end</span>
+        <span class="text-purple-400">if</span> A[<span class="text-green-400">1</span>] < B[<span class="text-green-400">1</span>]:
+            i += <span class="text-green-400">1</span>
+        <span class="text-purple-400">else</span>:
+            j += <span class="text-green-400">1</span>
+    
+    <span class="text-purple-400">return</span> []  <span class="text-gray-500"># No valid slot</span></code></pre>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. Edge Cases
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Edge Cases</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                                <div class="text-sm text-red-600 font-bold uppercase mb-2">No Valid Slot</div>
+                                <div class="font-mono text-xs mb-2">
+                                    <div>Intersection = [60, 70]</div>
+                                    <div>Duration = 15</div>
+                                </div>
+                                <div class="text-red-600 font-bold">Output: []</div>
+                                <p class="text-xs text-stone-500 mt-2">10 < 15, not long enough</p>
+                            </div>
+                            
+                            <div class="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-2">Exact Match</div>
+                                <div class="font-mono text-xs mb-2">
+                                    <div>Intersection = [60, 70]</div>
+                                    <div>Duration = 10</div>
+                                </div>
+                                <div class="text-green-600 font-bold">Output: [60, 70]</div>
+                                <p class="text-xs text-stone-500 mt-2">10 ≥ 10 ✓</p>
+                            </div>
+                            
+                            <div class="bg-amber-50 p-6 rounded-xl border-2 border-amber-200">
+                                <div class="text-sm text-amber-600 font-bold uppercase mb-2">Unsorted Input</div>
+                                <div class="font-mono text-xs mb-2">
+                                    <div>slots1 = [[60,120], [10,50]]</div>
+                                </div>
+                                <p class="text-amber-700 font-bold">Sort first!</p>
+                                <p class="text-xs text-stone-500 mt-2">Don't forget to sort</p>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
+                                <div class="text-sm text-blue-600 font-bold uppercase mb-2">Empty Input</div>
+                                <div class="font-mono text-xs mb-2">
+                                    <div>slots1 = []</div>
+                                </div>
+                                <div class="text-blue-600 font-bold">Output: []</div>
+                                <p class="text-xs text-stone-500 mt-2">Loop never executes</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 8. Common Mistakes
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Common Mistakes</h2>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Forgetting to sort</div>
+                                <p class="text-stone-600 text-sm">Unlike LC 986, the input is NOT guaranteed sorted!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Returning [start, end]</div>
+                                <p class="text-stone-600 text-sm">Return [start, start + duration] for exact slot!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Using > instead of >=</div>
+                                <p class="text-stone-600 text-sm">end - start >= duration (equals is valid!)</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Not returning early</div>
+                                <p class="text-stone-600 text-sm">We want the EARLIEST slot, so return immediately!</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 9. Complexity
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity Analysis</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-purple-50 p-8 rounded-2xl border-2 border-purple-200 text-center">
+                                <div class="text-sm text-purple-600 font-bold uppercase mb-2">Time Complexity</div>
+                                <div class="text-3xl font-bold text-purple-700 mb-4">O(m log m + n log n)</div>
+                                <div class="text-stone-600 text-sm text-left">
+                                    <div>• Sorting: O(m log m) + O(n log n)</div>
+                                    <div>• Two pointers: O(m + n)</div>
+                                    <div>• Sorting dominates!</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-8 rounded-2xl border-2 border-blue-200 text-center">
+                                <div class="text-sm text-blue-600 font-bold uppercase mb-2">Space Complexity</div>
+                                <div class="text-3xl font-bold text-blue-700 mb-4">O(1) or O(log n)</div>
+                                <div class="text-stone-600 text-sm text-left">
+                                    <div>• O(1) for pointers</div>
+                                    <div>• O(log n) if counting sort's stack</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                            <p class="text-amber-800 text-sm">
+                                <strong>Note:</strong> If input was guaranteed sorted (like LC 986), time would be O(m + n).
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 10. Summary
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Summary</h2>
+                        
+                        <div class="bg-gradient-to-r from-purple-50 to-violet-100 p-8 rounded-2xl mb-8">
+                            <div class="text-lg text-stone-700 mb-6">LC 1229 extends the Interval Intersection pattern:</div>
+                            
+                            <div class="space-y-3 text-left">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-red-600">priority_high</span>
+                                    <span><strong>Sort first</strong> — input may not be sorted!</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-purple-600">check_circle</span>
+                                    <span>Same two-pointer + intersection formula</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-purple-600">check_circle</span>
+                                    <span>Check if length ≥ duration</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-purple-600">check_circle</span>
+                                    <span>Return [start, start + duration]</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-green-600">bolt</span>
+                                    <span><strong>Return early</strong> when first valid slot found</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-stone-900 text-white p-6 rounded-2xl font-mono text-center">
+                            <div class="text-purple-400 text-xl">Real-world scheduling made simple! 📅</div>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // Walkthrough state
+        const walkSteps = [
+            { msg: "<strong>Step 0: Sort both lists</strong><br>Both already sorted ✓<br><br>i=0, j=0" },
+            { msg: "i=0, j=0: A=[10,50], B=[0,15]<br>start=max(10,0)=10, end=min(50,15)=15<br>Length = 15-10 = 5<br><span class='text-red-600'>5 < 8 ✗ Not long enough</span><br>50 > 15 → j++" },
+            { msg: "i=0, j=1: A=[10,50], B=[60,70]<br>start=max(10,60)=60, end=min(50,70)=50<br><span class='text-red-600'>60 > 50 ✗ No intersection</span><br>50 < 70 → i++" },
+            { msg: "i=1, j=1: A=[60,120], B=[60,70]<br>start=max(60,60)=60, end=min(120,70)=70<br>Length = 70-60 = 10<br><span class='text-green-600 font-bold'>10 ≥ 8 ✓ FOUND!</span>" },
+            { msg: "<span class='text-green-600 font-bold text-xl'>Return [60, 60+8] = [60, 68]</span><br><br>Meeting scheduled for 60-68! ✓", done: true }
+        ];
+
+        function resetWalk() {
+            walkStep = 0;
+            document.getElementById('walk-display').innerHTML = '<p class="text-stone-400">Click "Step" to begin...</p>';
+        }
+
+        function nextWalk() {
+            if (walkStep >= walkSteps.length) {
+                resetWalk();
+                return;
+            }
+            const step = walkSteps[walkStep];
+            document.getElementById('walk-display').innerHTML = `
+                <div class="text-left">
+                    <div class="font-mono text-sm ${step.done ? 'text-green-700' : 'text-stone-700'}">${step.msg}</div>
+                </div>
+            `;
+            walkStep++;
+        }
+
+        function navigate(direction) {
+            currentStep = Math.max(0, Math.min(totalSteps - 1, currentStep + direction));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            
+            const progress = ((currentStep + 1) / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition-all cursor-pointer ${i === currentStep ? 'bg-purple-500 scale-125' : 'bg-stone-300'}`;
+                dot.onclick = () => { currentStep = i; updateUI(); };
+                dotsContainer.appendChild(dot);
+            }
+            
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('prev-btn').classList.toggle('opacity-50', currentStep === 0);
+            
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.innerHTML = currentStep === totalSteps - 1 
+                ? 'Finish <span class="material-symbols-outlined">check_circle</span>'
+                : 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Number of Vowels - Sliding Window Pattern</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- html2canvas for screenshot capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fff7ed; /* orange-50 */
+            color: #44403c; /* stone-700 */
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        /* Interactive Elements */
+        .window-box {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .window-box > span {
+            display: inline-block;
+            text-align: center;
+            line-height: 1;
+        }
+        .window-active {
+            background-color: #ffedd5; /* orange-100 */
+            border-color: #f97316; /* orange-500 */
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .highlight-enter {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+            color: #15803d; /* green-700 */
+        }
+        .highlight-leave {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #b91c1c; /* red-700 */
+            opacity: 0.6;
+        }
+        .vowel-char {
+            background-color: #fef3c7; /* yellow-100 */
+            border-color: #f59e0b; /* yellow-500 */
+            color: #92400e; /* yellow-800 */
+            font-weight: bold;
+        }
+        .vowel-char.window-active {
+            background-color: #fde047; /* yellow-300 */
+            border-color: #eab308; /* yellow-500 */
+        }
+        .window-frame {
+            position: absolute;
+            border: 4px solid #f97316; /* orange-500 */
+            border-radius: 12px;
+            background-color: rgba(249, 115, 22, 0.1);
+            pointer-events: none;
+            z-index: 5;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+        }
+
+        /* Custom Scrollbar for Code */
+        .code-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .code-container::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .code-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-orange-200 border-2 border-orange-400 overflow-hidden shadow-md">
+                <img src="mohammad.png" alt="Tutor" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <span class="text-xs text-stone-500 uppercase tracking-wider font-bold">Interactive Algorithms</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Application Container -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100 flex flex-col relative min-h-[80vh] lg:min-h-[85vh]">
+        
+        <!-- Progress Bar -->
+        <div class="w-full h-2 bg-stone-100">
+            <div id="progress-bar" class="h-full bg-orange-500 transition-all duration-500 ease-out w-0" style="width: 10%;"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-grow p-6 md:p-12 flex flex-col justify-center items-center text-center">
+            <!-- Content injected by JS -->
+        </div>
+
+        <!-- Footer / Navigation -->
+        <div class="bg-stone-50 p-6 border-t border-stone-100 flex justify-between items-center">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 font-bold px-4 py-2 rounded-lg hover:bg-stone-200 disabled:opacity-30 disabled:hover:bg-transparent transition">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Previous
+            </button>
+            
+            <div class="flex items-center gap-4">
+                <div id="dots-container" class="flex gap-2">
+                    <!-- Dots injected by JS -->
+                </div>
+            </div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-orange-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Application Logic -->
+    <script>
+        // --- State ---
+        let currentStep = 0;
+        const totalSteps = 8;
+        
+        // Scenario Data
+        const str = "abciiidef";
+        const k = 3;
+        const vowels = new Set(['a', 'e', 'i', 'o', 'u']);
+        let scenarioIndex = 0;
+        let vowelCount = 0;
+        let maxVowels = 0;
+
+        // Helper function to check if character is vowel
+        function isVowel(char) {
+            return vowels.has(char.toLowerCase());
+        }
+
+        // --- Content Definitions ---
+        const steps = [
+            {
+                // 0. Hook & Challenge
+                render: () => `
+                    <div class="animate-fade-in max-w-5xl 2xl:max-w-6xl transform 2xl:scale-110 origin-center">
+                        <div class="inline-flex items-center gap-2 mb-6 2xl:mb-10 bg-blue-100 px-4 py-1 2xl:px-6 2xl:py-3 rounded-full text-blue-800 font-bold text-sm 2xl:text-lg uppercase tracking-widest">
+                            <span class="material-symbols-outlined text-base 2xl:text-xl">psychology</span> Lesson 3
+                        </div>
+                        <h1 class="text-4xl md:text-5xl 2xl:text-7xl font-bold text-stone-800 mb-6 2xl:mb-10">Strings & Counting</h1>
+                        <div class="bg-blue-50 border-2 border-blue-200 p-8 2xl:p-12 rounded-3xl inline-block shadow-lg">
+                            <p class="text-xl 2xl:text-2xl text-stone-700 mb-4 2xl:mb-6">
+                                This problem works on <strong class="text-blue-700">strings</strong> instead of arrays.
+                            </p>
+                            <p class="text-lg 2xl:text-xl text-stone-600 mb-4 2xl:mb-6">
+                                We're <strong class="text-blue-700">counting</strong> instead of summing.
+                            </p>
+                            <div class="bg-white p-4 2xl:p-6 rounded-xl border-l-4 border-blue-500 mt-4 2xl:mt-6">
+                                <p class="font-bold text-blue-900 2xl:text-xl">But it's still the <strong>same 5-step pattern</strong>!</p>
+                                <p class="text-blue-800 text-sm 2xl:text-base mt-2">Only the operation changes.</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. Problem Statement
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <div class="flex items-center gap-3 mb-6 2xl:mb-8 justify-center">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs 2xl:text-base font-bold uppercase rounded-full">LeetCode 1456</span>
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs 2xl:text-base font-bold uppercase rounded-full">Medium</span>
+                        </div>
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Maximum Number of Vowels</h2>
+                        
+                        <div class="bg-stone-900 text-white p-6 2xl:p-10 rounded-2xl mb-6 2xl:mb-10 font-mono text-sm 2xl:text-lg">
+                            <div class="mb-4 2xl:mb-6">
+                                <span class="text-stone-400">s = </span>
+                                <span class="text-green-400">"abciiidef"</span>
+                            </div>
+                            <div>
+                                <span class="text-stone-400">k = </span>
+                                <span class="text-yellow-400">3</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 2xl:p-8 rounded-xl text-left max-w-3xl mx-auto mb-6 2xl:mb-10">
+                            <p class="text-blue-900 font-bold text-lg 2xl:text-xl mb-3 2xl:mb-4">Problem:</p>
+                            <p class="text-blue-800 text-sm 2xl:text-base mb-2">
+                                Return the <strong>maximum number of vowel letters</strong> in any substring of <code class="bg-blue-100 px-1 rounded">s</code> with length <code class="bg-blue-100 px-1 rounded">k</code>.
+                            </p>
+                            <p class="text-blue-800 text-sm 2xl:text-base mt-3">
+                                <strong>Vowels:</strong> <code class="bg-blue-100 px-1 rounded">'a'</code>, <code class="bg-blue-100 px-1 rounded">'e'</code>, <code class="bg-blue-100 px-1 rounded">'i'</code>, <code class="bg-blue-100 px-1 rounded">'o'</code>, <code class="bg-blue-100 px-1 rounded">'u'</code>
+                            </p>
+                        </div>
+
+                        <div class="bg-stone-100 p-6 2xl:p-8 rounded-xl border border-stone-300">
+                            <p class="text-stone-700 text-sm 2xl:text-lg mb-3">
+                                <strong>Example:</strong> Substring <code class="bg-yellow-100 px-2 py-1 rounded font-mono font-bold">"iii"</code> contains <strong class="text-yellow-600">3 vowels</strong> → Answer: <strong class="text-green-600">3</strong>
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. Pattern Recognition (3 Clues)
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl 2xl:max-w-6xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Is This a Sliding Window?</h2>
+                        <p class="text-lg 2xl:text-xl text-stone-600 mb-8 2xl:mb-12">Let's check our <strong>3 Clues</strong>:</p>
+                        
+                        <div class="space-y-4 2xl:space-y-6">
+                            ${[
+                                {clue: "Linear Data Structure?", answer: "Yes, it's a string (array of characters).", borderClass: "border-green-200", bgClass: "bg-green-100", textClass: "text-green-600"},
+                                {clue: "Contiguous?", answer: "Yes. Substrings are contiguous by definition.", borderClass: "border-green-200", bgClass: "bg-green-100", textClass: "text-green-600"},
+                                {clue: "Fixed Size k?", answer: "Yes, k is given explicitly: 'substring of length k'.", borderClass: "border-green-200", bgClass: "bg-green-100", textClass: "text-green-600"}
+                            ].map((item, i) => `
+                                <div class="flex items-start gap-4 2xl:gap-6 p-6 2xl:p-8 bg-white rounded-xl border-2 ${item.borderClass} shadow-sm">
+                                    <div class="w-12 h-12 2xl:w-16 2xl:h-16 rounded-full ${item.bgClass} flex items-center justify-center flex-shrink-0">
+                                        <span class="material-symbols-outlined ${item.textClass} text-2xl 2xl:text-3xl">check_circle</span>
+                                    </div>
+                                    <div class="text-left flex-grow">
+                                        <h4 class="font-bold text-stone-800 text-lg 2xl:text-2xl mb-2">${item.clue}</h4>
+                                        <p class="text-stone-600 text-sm 2xl:text-lg">${item.answer}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="mt-8 2xl:mt-12 bg-green-50 p-6 2xl:p-10 rounded-xl border-2 border-green-300 text-center">
+                            <p class="text-green-900 font-bold text-xl 2xl:text-3xl">
+                                <span class="material-symbols-outlined align-middle text-2xl 2xl:text-4xl">celebration</span>
+                                All green lights! This is a <strong>Fixed Sliding Window</strong> problem.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. Operation Swap
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">The Key Insight</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8 2xl:gap-12 mb-8 2xl:mb-12">
+                            <!-- Max Sum Problem -->
+                            <div class="bg-stone-50 p-6 2xl:p-10 rounded-2xl border-2 border-stone-200">
+                                <h3 class="font-bold text-stone-800 text-xl 2xl:text-2xl mb-4 2xl:mb-6">Max Sum Problem</h3>
+                                <div class="bg-white p-4 2xl:p-6 rounded-xl mb-4 2xl:mb-6">
+                                    <p class="text-stone-600 text-sm 2xl:text-base mb-2">Operation:</p>
+                                    <p class="font-mono text-sm 2xl:text-lg font-bold text-orange-600">current_sum += entering</p>
+                                    <p class="font-mono text-sm 2xl:text-lg font-bold text-orange-600">current_sum -= leaving</p>
+                                </div>
+                                <div class="bg-orange-100 p-4 2xl:p-6 rounded-lg">
+                                    <p class="text-xs 2xl:text-sm text-stone-600">Type:</p>
+                                    <p class="font-bold text-orange-900 text-lg 2xl:text-xl">Direct Addition</p>
+                                </div>
+                            </div>
+
+                            <!-- Max Vowels Problem -->
+                            <div class="bg-blue-50 p-6 2xl:p-10 rounded-2xl border-2 border-blue-300 shadow-lg transform scale-105">
+                                <h3 class="font-bold text-blue-900 text-xl 2xl:text-2xl mb-4 2xl:mb-6">Max Vowels Problem</h3>
+                                <div class="bg-white p-4 2xl:p-6 rounded-xl mb-4 2xl:mb-6">
+                                    <p class="text-stone-600 text-sm 2xl:text-base mb-2">Operation:</p>
+                                    <p class="font-mono text-sm 2xl:text-lg font-bold text-blue-600">if entering is vowel: count += 1</p>
+                                    <p class="font-mono text-sm 2xl:text-lg font-bold text-blue-600">if leaving is vowel: count -= 1</p>
+                                </div>
+                                <div class="bg-blue-200 p-4 2xl:p-6 rounded-lg">
+                                    <p class="text-xs 2xl:text-sm text-stone-600">Type:</p>
+                                    <p class="font-bold text-blue-900 text-lg 2xl:text-xl">Conditional Counting</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 2xl:p-10 rounded-xl">
+                            <p class="text-blue-900 font-bold text-lg 2xl:text-2xl mb-3 2xl:mb-4">
+                                <span class="material-symbols-outlined align-middle text-xl 2xl:text-2xl">lightbulb</span>
+                                The Core Idea:
+                            </p>
+                            <p class="text-blue-800 text-base 2xl:text-lg">
+                                Keep the <strong>same sliding motion</strong>, but use <strong>conditional operations</strong> instead of direct addition/subtraction.
+                            </p>
+                            <p class="text-blue-800 text-sm 2xl:text-base mt-2">
+                                The data structure stays the same (integer), only the <strong>operation</strong> changes!
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. Interactive Visualization
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-4 2xl:mb-8">Walking Through the Example</h2>
+                        <p class="text-lg 2xl:text-xl text-stone-600 mb-6 2xl:mb-10">
+                            <code class="bg-stone-100 px-2 py-1 rounded font-mono">s = "abciiidef"</code>, 
+                            <code class="bg-stone-100 px-2 py-1 rounded font-mono">k = 3</code>
+                        </p>
+                        
+                        <!-- Interactive String -->
+                        <div id="vowel-container" class="bg-stone-100 rounded-3xl p-8 2xl:p-16 mb-6 2xl:mb-10 flex flex-col items-center justify-center min-h-[220px] 2xl:min-h-[300px] relative">
+                            <div id="vowel-boxes-container" class="flex gap-2 md:gap-4 2xl:gap-6 mb-6 2xl:mb-10 flex-wrap justify-center relative">
+                                ${str.split('').map((char, i) => `
+                                    <div id="vowel-box-${i}" class="window-box w-14 h-14 md:w-16 md:h-16 2xl:w-24 2xl:h-24 bg-white rounded-xl 2xl:rounded-2xl border-2 border-stone-200 flex items-center justify-center text-2xl 2xl:text-4xl font-bold text-stone-400 shadow-sm ${isVowel(char) ? 'vowel-char' : ''}">
+                                        <span>${char}</span>
+                                    </div>
+                                `).join('')}
+                                <!-- Sliding Window Frame -->
+                                <div id="window-frame" class="window-frame" style="display: none;"></div>
+                            </div>
+                            
+                            <!-- Count Display -->
+                            <div class="bg-white px-8 2xl:px-12 py-4 2xl:py-6 rounded-full shadow-sm border border-stone-200 mb-4 2xl:mb-6 flex items-center gap-6 2xl:gap-10">
+                                <div>
+                                    <div class="text-[10px] 2xl:text-sm font-bold text-stone-400 uppercase tracking-widest mb-2">Current Vowel Count</div>
+                                    <div id="vowel-count" class="font-mono text-2xl 2xl:text-4xl text-blue-600 font-bold min-h-[32px] 2xl:min-h-[48px]">0</div>
+                                </div>
+                                <div class="w-px h-12 2xl:h-16 bg-stone-200"></div>
+                                <div>
+                                    <div class="text-[10px] 2xl:text-sm font-bold text-stone-400 uppercase tracking-widest mb-2">Max Vowels</div>
+                                    <div id="max-vowels" class="font-mono text-2xl 2xl:text-4xl text-green-600 font-bold min-h-[32px] 2xl:min-h-[48px]">0</div>
+                                </div>
+                            </div>
+
+                            <!-- Status -->
+                            <div id="vowel-status" class="text-sm 2xl:text-lg text-stone-500 min-h-[24px] 2xl:min-h-[32px]">Click "Next Step" to start</div>
+                        </div>
+
+                        <div class="flex gap-4 justify-center">
+                            <button onclick="resetVowelScenario()" class="px-6 2xl:px-10 py-2 2xl:py-4 rounded-lg text-stone-500 font-bold hover:bg-stone-100 transition 2xl:text-lg">Reset</button>
+                            <button onclick="nextVowelStep()" class="px-8 2xl:px-12 py-3 2xl:py-5 bg-blue-600 text-white rounded-xl 2xl:rounded-2xl font-bold hover:bg-blue-700 shadow-lg flex items-center gap-2 transform active:scale-95 transition 2xl:text-xl">
+                                Next Step <span class="material-symbols-outlined 2xl:text-2xl">play_circle</span>
+                            </button>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. Python Solution
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl 2xl:max-w-6xl h-full flex flex-col">
+                        <h2 class="text-2xl 2xl:text-4xl font-bold text-stone-800 mb-4 2xl:mb-8">Python Solution</h2>
+                        <div class="flex justify-center mb-4">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs 2xl:text-base font-bold uppercase rounded-full tracking-wide">Same Pattern, Conditional Operations</span>
+                        </div>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 flex flex-col text-left relative">
+                            <div class="absolute top-4 right-4 2xl:top-8 2xl:right-8 px-3 2xl:px-5 py-1 2xl:py-2 bg-gray-800 rounded-full text-xs 2xl:text-base text-gray-400 font-mono border border-gray-700">O(N) Time</div>
+                            <div class="code-container overflow-auto p-6 md:p-8 2xl:p-12 text-sm md:text-base 2xl:text-xl font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">max_vowels</span>(s, k):
+    vowels = {<span class="text-green-400">'a'</span>, <span class="text-green-400">'e'</span>, <span class="text-green-400">'i'</span>, <span class="text-green-400">'o'</span>, <span class="text-green-400">'u'</span>}
+    
+    <span class="text-gray-500"># Step 1: Compute the first window [0 .. k-1]</span>
+    vowel_count = <span class="text-green-400">0</span>
+    <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-blue-400">range</span>(k):
+        <span class="text-purple-400">if</span> s[i] <span class="text-purple-400">in</span> vowels:
+            vowel_count += <span class="text-green-400">1</span>
+    
+    <span class="text-gray-500"># Step 2: Store initial best</span>
+    max_vowels = vowel_count
+    
+    <span class="text-gray-500"># Step 3: Slide the window</span>
+    <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-blue-400">range</span>(k, <span class="text-blue-400">len</span>(s)):
+        entering = s[i]
+        leaving = s[i - k]
+        
+        <span class="text-gray-500"># Step 4: Update window count</span>
+        <span class="text-purple-400">if</span> entering <span class="text-purple-400">in</span> vowels:
+            <span class="text-yellow-300 font-bold">vowel_count += 1</span>
+        <span class="text-purple-400">if</span> leaving <span class="text-purple-400">in</span> vowels:
+            <span class="text-yellow-300 font-bold">vowel_count -= 1</span>
+        
+        <span class="text-gray-500"># Step 5: Update best</span>
+        max_vowels = <span class="text-blue-400">max</span>(max_vowels, vowel_count)
+    
+    <span class="text-purple-400">return</span> max_vowels</code></pre>
+                            </div>
+                        </div>
+                        <div class="mt-6 2xl:mt-8 bg-blue-50 p-4 2xl:p-6 rounded-xl border border-blue-200">
+                            <p class="text-blue-900 font-bold text-sm 2xl:text-lg mb-2">Key Points:</p>
+                            <ul class="text-blue-800 text-xs 2xl:text-base list-disc list-inside space-y-1">
+                                <li>Same data structure (integer) as max sum problem</li>
+                                <li>Conditional operations: <code class="bg-blue-100 px-1 rounded">if char in vowels</code></li>
+                                <li>Same sliding motion: remove leaving, add entering</li>
+                                <li>Works on strings just like arrays!</li>
+                            </ul>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Connection to Template
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Mapping to Our Template</h2>
+                        
+                        <div class="space-y-6 2xl:space-y-8">
+                            ${[
+                                {
+                                    question: "What are we measuring?",
+                                    template: "window_value",
+                                    here: "vowel_count (Count of vowels)",
+                                    borderClass: "border-blue-200",
+                                    bgClass: "bg-blue-50",
+                                    textClass: "text-blue-600",
+                                    textBoldClass: "text-blue-900"
+                                },
+                                {
+                                    question: "How do we update?",
+                                    template: "+= entering, -= leaving",
+                                    here: "if entering in vowels: += 1<br>if leaving in vowels: -= 1",
+                                    borderClass: "border-purple-200",
+                                    bgClass: "bg-purple-50",
+                                    textClass: "text-purple-600",
+                                    textBoldClass: "text-purple-900"
+                                },
+                                {
+                                    question: "What is 'Best'?",
+                                    template: "max(best, current)",
+                                    here: "max(max_vowels, vowel_count)",
+                                    borderClass: "border-orange-200",
+                                    bgClass: "bg-orange-50",
+                                    textClass: "text-orange-600",
+                                    textBoldClass: "text-orange-900"
+                                }
+                            ].map((item, i) => `
+                                <div class="bg-white p-6 2xl:p-10 rounded-xl border-2 ${item.borderClass} shadow-sm">
+                                    <h4 class="font-bold text-stone-800 text-lg 2xl:text-2xl mb-4 2xl:mb-6">${item.question}</h4>
+                                    <div class="grid md:grid-cols-2 gap-4 2xl:gap-6">
+                                        <div class="bg-stone-50 p-4 2xl:p-6 rounded-lg">
+                                            <p class="text-xs 2xl:text-sm text-stone-500 mb-2">Template:</p>
+                                            <p class="font-mono text-sm 2xl:text-lg text-stone-700 font-bold">${item.template}</p>
+                                        </div>
+                                        <div class="${item.bgClass} p-4 2xl:p-6 rounded-lg">
+                                            <p class="text-xs 2xl:text-sm ${item.textClass} mb-2">Here:</p>
+                                            <p class="font-mono text-sm 2xl:text-lg ${item.textBoldClass} font-bold">${item.here}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="mt-8 2xl:mt-12 bg-orange-50 p-6 2xl:p-10 rounded-xl border-2 border-orange-300 text-center">
+                            <p class="text-orange-900 font-bold text-lg 2xl:text-2xl">
+                                <span class="material-symbols-outlined align-middle text-xl 2xl:text-2xl">auto_awesome</span>
+                                Same <strong>sliding motion</strong>, same <strong>5-step pattern</strong>!
+                            </p>
+                            <p class="text-orange-800 text-sm 2xl:text-base mt-2">
+                                Only the operation changes (conditional vs. direct).
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. Wrap Up
+                render: () => `
+                    <div class="animate-fade-in max-w-5xl 2xl:max-w-6xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Key Takeaways</h2>
+                        
+                        <div class="bg-gradient-to-br from-blue-50 to-orange-50 p-8 2xl:p-12 rounded-3xl border-2 border-blue-200 shadow-lg mb-6 2xl:mb-10">
+                            <p class="text-lg 2xl:text-2xl text-stone-700 mb-4 2xl:mb-6">
+                                The Fixed Sliding Window pattern works on:
+                            </p>
+                            <div class="grid md:grid-cols-2 gap-4 2xl:gap-6 mb-6 2xl:mb-8">
+                                <div class="bg-white p-4 2xl:p-6 rounded-xl">
+                                    <p class="font-bold text-stone-800 text-base 2xl:text-lg mb-2">Data Structures:</p>
+                                    <ul class="text-stone-600 text-sm 2xl:text-base list-disc list-inside space-y-1">
+                                        <li>✅ Arrays (numbers)</li>
+                                        <li>✅ Strings (characters)</li>
+                                        <li>✅ Any linear structure</li>
+                                    </ul>
+                                </div>
+                                <div class="bg-white p-4 2xl:p-6 rounded-xl">
+                                    <p class="font-bold text-stone-800 text-base 2xl:text-lg mb-2">Operations:</p>
+                                    <ul class="text-stone-600 text-sm 2xl:text-base list-disc list-inside space-y-1">
+                                        <li>✅ Direct addition</li>
+                                        <li>✅ Conditional counting</li>
+                                        <li>✅ Set operations</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 2xl:p-10 rounded-xl border-l-4 border-blue-500">
+                                <p class="font-bold text-blue-900 text-lg 2xl:text-2xl mb-2">
+                                    The Core Principle:
+                                </p>
+                                <p class="text-blue-800 text-base 2xl:text-xl font-mono">
+                                    Add incoming contribution, remove outgoing contribution
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 2xl:p-10 rounded-xl">
+                            <p class="text-blue-900 font-bold text-lg 2xl:text-xl mb-3 2xl:mb-4">
+                                <span class="material-symbols-outlined align-middle text-xl 2xl:text-2xl">school</span>
+                                Next Steps:
+                            </p>
+                            <ul class="text-blue-800 text-sm 2xl:text-base list-disc list-inside space-y-2">
+                                <li>Try solving <strong>LeetCode 1456</strong> on your own</li>
+                                <li>Notice how the pattern adapts to different operations</li>
+                                <li>Practice recognizing the pattern in string problems</li>
+                            </ul>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // --- Navigation Logic ---
+        function init() {
+            renderStep(0);
+            updateProgress();
+            updateDots();
+        }
+
+        function navigate(delta) {
+            const newStep = currentStep + delta;
+            if (newStep >= 0 && newStep < totalSteps) {
+                currentStep = newStep;
+                renderStep(currentStep);
+                updateProgress();
+                updateDots();
+                updateButtons();
+            }
+        }
+
+        function renderStep(stepIndex) {
+            const contentArea = document.getElementById('content-area');
+            if (steps[stepIndex]) {
+                contentArea.innerHTML = steps[stepIndex].render();
+                // Re-initialize interactive elements if needed
+                if (stepIndex === 4) {
+                    resetVowelScenario();
+                }
+            }
+        }
+
+        function updateProgress() {
+            const progressBar = document.getElementById('progress-bar');
+            const percentage = ((currentStep + 1) / totalSteps) * 100;
+            progressBar.style.width = percentage + '%';
+        }
+
+        function updateDots() {
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition ${i === currentStep ? 'bg-orange-500 w-8' : 'bg-stone-300'}`;
+                dot.onclick = () => {
+                    currentStep = i;
+                    renderStep(currentStep);
+                    updateProgress();
+                    updateDots();
+                    updateButtons();
+                };
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            prevBtn.disabled = currentStep === 0;
+            if (currentStep === totalSteps - 1) {
+                nextBtn.innerHTML = 'Finish <span class="material-symbols-outlined">check</span>';
+            } else {
+                nextBtn.innerHTML = 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+            }
+        }
+
+        // --- Vowel Scenario Logic ---
+        function updateWindowFrame(startIndex, endIndex) {
+            const frame = document.getElementById('window-frame');
+            if (!frame) return;
+            
+            const firstBox = document.getElementById(`vowel-box-${startIndex}`);
+            const lastBox = document.getElementById(`vowel-box-${endIndex}`);
+            
+            if (!firstBox || !lastBox) {
+                frame.style.display = 'none';
+                return;
+            }
+            
+            const container = document.getElementById('vowel-boxes-container');
+            const containerRect = container.getBoundingClientRect();
+            const firstRect = firstBox.getBoundingClientRect();
+            const lastRect = lastBox.getBoundingClientRect();
+            
+            // Calculate frame position relative to container
+            const left = firstRect.left - containerRect.left;
+            const top = firstRect.top - containerRect.top;
+            const width = lastRect.right - firstRect.left;
+            const height = firstRect.height;
+            
+            frame.style.display = 'block';
+            frame.style.left = `${left}px`;
+            frame.style.top = `${top}px`;
+            frame.style.width = `${width}px`;
+            frame.style.height = `${height}px`;
+        }
+
+        function resetVowelScenario() {
+            scenarioIndex = 0;
+            vowelCount = 0;
+            maxVowels = 0;
+            str.split('').forEach((char, i) => {
+                const el = document.getElementById(`vowel-box-${i}`);
+                if (el) {
+                    const baseClasses = "window-box w-14 h-14 md:w-16 md:h-16 2xl:w-24 2xl:h-24 rounded-xl 2xl:rounded-2xl border-2 flex items-center justify-center text-2xl 2xl:text-4xl font-bold shadow-sm";
+                    el.className = baseClasses + (isVowel(char) ? ' vowel-char bg-white border-stone-200 text-stone-400' : ' bg-white border-stone-200 text-stone-400');
+                    el.style.opacity = '1';
+                }
+            });
+            const frame = document.getElementById('window-frame');
+            if (frame) frame.style.display = 'none';
+            const countEl = document.getElementById('vowel-count');
+            if (countEl) countEl.textContent = '0';
+            const maxEl = document.getElementById('max-vowels');
+            if (maxEl) maxEl.textContent = '0';
+            const statusEl = document.getElementById('vowel-status');
+            if (statusEl) statusEl.textContent = 'Click "Next Step" to start';
+        }
+
+        function nextVowelStep() {
+            if (scenarioIndex === 0) {
+                // Step 1: Compute first window (indices 0 to k-1)
+                vowelCount = 0;
+                for (let i = 0; i < k && i < str.length; i++) {
+                    const el = document.getElementById(`vowel-box-${i}`);
+                    if (el) {
+                        el.classList.add('window-active');
+                        el.classList.remove('text-stone-400');
+                        if (isVowel(str[i])) {
+                            el.classList.add('text-yellow-800');
+                            vowelCount++;
+                        } else {
+                            el.classList.add('text-stone-800');
+                        }
+                    }
+                }
+                maxVowels = vowelCount;
+                document.getElementById('vowel-count').textContent = vowelCount;
+                document.getElementById('max-vowels').textContent = maxVowels;
+                document.getElementById('vowel-status').textContent = `First window: "${str.substring(0, k)}" → ${vowelCount} vowel(s). Max = ${maxVowels}.`;
+                
+                // Update window frame
+                setTimeout(() => updateWindowFrame(0, k - 1), 50);
+                scenarioIndex = k;
+            } else if (scenarioIndex < str.length) {
+                // Step 3+: Slide the window
+                const i = scenarioIndex;
+                const entering = str[i];
+                const leavingIndex = i - k;
+                const leaving = str[leavingIndex];
+                
+                // Remove leaving element
+                const leavingEl = document.getElementById(`vowel-box-${leavingIndex}`);
+                if (leavingEl) {
+                    leavingEl.classList.add('highlight-leave');
+                    leavingEl.classList.remove('window-active');
+                    if (isVowel(leaving)) {
+                        vowelCount--;
+                    }
+                }
+                
+                // Highlight entering element
+                const enteringEl = document.getElementById(`vowel-box-${i}`);
+                if (enteringEl) {
+                    enteringEl.classList.add('highlight-enter', 'window-active');
+                    enteringEl.classList.remove('text-stone-400');
+                    if (isVowel(entering)) {
+                        enteringEl.classList.add('text-green-800');
+                        vowelCount++;
+                    } else {
+                        enteringEl.classList.add('text-stone-800');
+                    }
+                }
+                
+                // Update max
+                maxVowels = Math.max(maxVowels, vowelCount);
+                
+                document.getElementById('vowel-count').textContent = vowelCount;
+                document.getElementById('max-vowels').textContent = maxVowels;
+                
+                const windowStr = str.substring(leavingIndex + 1, i + 1);
+                const enteringAction = isVowel(entering) ? `+1 (${entering} is vowel)` : `+0 (${entering} is not vowel)`;
+                const leavingAction = isVowel(leaving) ? `-1 (${leaving} is vowel)` : `-0 (${leaving} is not vowel)`;
+                document.getElementById('vowel-status').textContent = `Window "${windowStr}": ${leavingAction}, ${enteringAction} → Count: ${vowelCount}, Max: ${maxVowels}`;
+                
+                // Update window frame to slide to new position
+                setTimeout(() => updateWindowFrame(leavingIndex + 1, i), 50);
+                
+                scenarioIndex++;
+            } else {
+                const frame = document.getElementById('window-frame');
+                if (frame) frame.style.display = 'none';
+                document.getElementById('vowel-status').textContent = `Finished! Maximum vowels found: ${maxVowels}`;
+                document.getElementById('vowel-status').classList.add('text-green-600', 'font-bold');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contains Duplicate II - Sliding Window Pattern</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- html2canvas for screenshot capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fff7ed; /* orange-50 */
+            color: #44403c; /* stone-700 */
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        /* Interactive Elements */
+        .window-box {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .window-box > span {
+            display: inline-block;
+            text-align: center;
+            line-height: 1;
+        }
+        .window-active {
+            background-color: #ffedd5; /* orange-100 */
+            border-color: #f97316; /* orange-500 */
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .highlight-enter {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+            color: #15803d; /* green-700 */
+        }
+        .highlight-leave {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+            color: #b91c1c; /* red-700 */
+            opacity: 0.6;
+        }
+        .highlight-duplicate {
+            background-color: #fef3c7; /* yellow-100 */
+            border-color: #f59e0b; /* yellow-500 */
+            color: #92400e; /* yellow-800 */
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        /* Custom Scrollbar for Code */
+        .code-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .code-container::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .code-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-orange-200 border-2 border-orange-400 overflow-hidden shadow-md">
+                <img src="mohammad.png" alt="Tutor" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <span class="text-xs text-stone-500 uppercase tracking-wider font-bold">Interactive Algorithms</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Application Container -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100 flex flex-col relative min-h-[80vh] lg:min-h-[85vh]">
+        
+        <!-- Progress Bar -->
+        <div class="w-full h-2 bg-stone-100">
+            <div id="progress-bar" class="h-full bg-orange-500 transition-all duration-500 ease-out w-0" style="width: 10%;"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-grow p-6 md:p-12 flex flex-col justify-center items-center text-center">
+            <!-- Content injected by JS -->
+        </div>
+
+        <!-- Footer / Navigation -->
+        <div class="bg-stone-50 p-6 border-t border-stone-100 flex justify-between items-center">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 font-bold px-4 py-2 rounded-lg hover:bg-stone-200 disabled:opacity-30 disabled:hover:bg-transparent transition">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Previous
+            </button>
+            
+            <div class="flex items-center gap-4">
+                <div id="dots-container" class="flex gap-2">
+                    <!-- Dots injected by JS -->
+                </div>
+            </div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-orange-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Application Logic -->
+    <script>
+        // --- State ---
+        let currentStep = 0;
+        const totalSteps = 8;
+        
+        // Scenario Data
+        const numbers = [1, 2, 3, 1, 2, 3];
+        const k = 2;
+        let scenarioIndex = 0;
+        let windowSet = new Set();
+
+        // --- Content Definitions ---
+        const steps = [
+            {
+                // 0. Hook & Challenge
+                render: () => `
+                    <div class="animate-fade-in max-w-5xl 2xl:max-w-6xl transform 2xl:scale-110 origin-center">
+                        <div class="inline-flex items-center gap-2 mb-6 2xl:mb-10 bg-purple-100 px-4 py-1 2xl:px-6 2xl:py-3 rounded-full text-purple-800 font-bold text-sm 2xl:text-lg uppercase tracking-widest">
+                            <span class="material-symbols-outlined text-base 2xl:text-xl">psychology</span> Lesson 2
+                        </div>
+                        <h1 class="text-4xl md:text-5xl 2xl:text-7xl font-bold text-stone-800 mb-6 2xl:mb-10">A Different Problem...</h1>
+                        <div class="bg-purple-50 border-2 border-purple-200 p-8 2xl:p-12 rounded-3xl inline-block shadow-lg">
+                            <p class="text-xl 2xl:text-2xl text-stone-700 mb-4 2xl:mb-6">
+                                This problem looks <strong class="text-purple-700">completely different</strong>.
+                            </p>
+                            <p class="text-lg 2xl:text-xl text-stone-600 mb-4 2xl:mb-6">
+                                It's not about sums. It's about <strong class="text-purple-700">duplicates</strong>.
+                            </p>
+                            <div class="bg-white p-4 2xl:p-6 rounded-xl border-l-4 border-purple-500 mt-4 2xl:mt-6">
+                                <p class="font-bold text-purple-900 2xl:text-xl">But we'll solve it with the <strong>same 5-step pattern</strong>!</p>
+                                <p class="text-purple-800 text-sm 2xl:text-base mt-2">Only the data structure changes.</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. Problem Statement
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <div class="flex items-center gap-3 mb-6 2xl:mb-8 justify-center">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs 2xl:text-base font-bold uppercase rounded-full">LeetCode 219</span>
+                            <span class="px-3 py-1 bg-green-100 text-green-700 text-xs 2xl:text-base font-bold uppercase rounded-full">Easy</span>
+                        </div>
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Contains Duplicate II</h2>
+                        
+                        <div class="bg-stone-900 text-white p-6 2xl:p-10 rounded-2xl mb-6 2xl:mb-10 font-mono text-sm 2xl:text-lg">
+                            <div class="mb-4 2xl:mb-6">
+                                <span class="text-stone-400">nums = </span>
+                                <span class="text-green-400">[1, 2, 3, 1]</span>
+                            </div>
+                            <div>
+                                <span class="text-stone-400">k = </span>
+                                <span class="text-yellow-400">3</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 2xl:p-8 rounded-xl text-left max-w-3xl mx-auto mb-6 2xl:mb-10">
+                            <p class="text-blue-900 font-bold text-lg 2xl:text-xl mb-3 2xl:mb-4">Problem:</p>
+                            <p class="text-blue-800 text-sm 2xl:text-base mb-2">
+                                Return <strong>True</strong> if there are two distinct indices <code class="bg-blue-100 px-1 rounded">i</code> and <code class="bg-blue-100 px-1 rounded">j</code> such that:
+                            </p>
+                            <ul class="list-disc list-inside text-blue-800 text-sm 2xl:text-base space-y-2">
+                                <li><code class="bg-blue-100 px-1 rounded">nums[i] == nums[j]</code> (same number)</li>
+                                <li><code class="bg-blue-100 px-1 rounded">abs(i - j) <= k</code> (within distance k)</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-stone-100 p-6 2xl:p-8 rounded-xl border border-stone-300">
+                            <p class="text-stone-700 text-sm 2xl:text-lg mb-2">
+                                <span class="material-symbols-outlined align-middle text-lg 2xl:text-xl">home</span>
+                                <strong>Analogy:</strong> Walking down a street, remembering only the last <code class="bg-white px-2 py-1 rounded font-mono">k</code> house numbers.
+                            </p>
+                            <p class="text-stone-600 text-xs 2xl:text-base">
+                                If you see a number you remember → <strong class="text-green-600">True</strong>!
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. Pattern Recognition (3 Clues)
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl 2xl:max-w-6xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Is This a Sliding Window?</h2>
+                        <p class="text-lg 2xl:text-xl text-stone-600 mb-8 2xl:mb-12">Let's check our <strong>3 Clues</strong>:</p>
+                        
+                        <div class="space-y-4 2xl:space-y-6">
+                            ${[
+                                {clue: "Linear Data Structure?", answer: "Yes, it's an array.", icon: "check_circle", borderClass: "border-green-200", bgClass: "bg-green-100", textClass: "text-green-600"},
+                                {clue: "Contiguous?", answer: "Yes. abs(i - j) <= k defines a contiguous window of size k.", icon: "check_circle", borderClass: "border-green-200", bgClass: "bg-green-100", textClass: "text-green-600"},
+                                {clue: "Fixed Size k?", answer: "Yes, k is given explicitly.", icon: "check_circle", borderClass: "border-green-200", bgClass: "bg-green-100", textClass: "text-green-600"}
+                            ].map((item, i) => `
+                                <div class="flex items-start gap-4 2xl:gap-6 p-6 2xl:p-8 bg-white rounded-xl border-2 ${item.borderClass} shadow-sm">
+                                    <div class="w-12 h-12 2xl:w-16 2xl:h-16 rounded-full ${item.bgClass} flex items-center justify-center flex-shrink-0">
+                                        <span class="material-symbols-outlined ${item.textClass} text-2xl 2xl:text-3xl">${item.icon}</span>
+                                    </div>
+                                    <div class="text-left flex-grow">
+                                        <h4 class="font-bold text-stone-800 text-lg 2xl:text-2xl mb-2">${item.clue}</h4>
+                                        <p class="text-stone-600 text-sm 2xl:text-lg">${item.answer}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="mt-8 2xl:mt-12 bg-green-50 p-6 2xl:p-10 rounded-xl border-2 border-green-300 text-center">
+                            <p class="text-green-900 font-bold text-xl 2xl:text-3xl">
+                                <span class="material-symbols-outlined align-middle text-2xl 2xl:text-4xl">celebration</span>
+                                All green lights! This is a <strong>Fixed Sliding Window</strong> problem.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. Data Structure Swap
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">The Key Insight</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8 2xl:gap-12 mb-8 2xl:mb-12">
+                            <!-- Max Sum Problem -->
+                            <div class="bg-stone-50 p-6 2xl:p-10 rounded-2xl border-2 border-stone-200">
+                                <h3 class="font-bold text-stone-800 text-xl 2xl:text-2xl mb-4 2xl:mb-6">Max Sum Problem</h3>
+                                <div class="bg-white p-4 2xl:p-6 rounded-xl mb-4 2xl:mb-6">
+                                    <p class="text-stone-600 text-sm 2xl:text-base mb-2">Window needs to hold:</p>
+                                    <p class="font-mono text-lg 2xl:text-2xl font-bold text-orange-600">current_sum</p>
+                                </div>
+                                <div class="bg-orange-100 p-4 2xl:p-6 rounded-lg">
+                                    <p class="text-xs 2xl:text-sm text-stone-600">Data Structure:</p>
+                                    <p class="font-bold text-orange-900 text-lg 2xl:text-xl">Integer</p>
+                                </div>
+                            </div>
+
+                            <!-- Contains Duplicate Problem -->
+                            <div class="bg-purple-50 p-6 2xl:p-10 rounded-2xl border-2 border-purple-300 shadow-lg transform scale-105">
+                                <h3 class="font-bold text-purple-900 text-xl 2xl:text-2xl mb-4 2xl:mb-6">Contains Duplicate II</h3>
+                                <div class="bg-white p-4 2xl:p-6 rounded-xl mb-4 2xl:mb-6">
+                                    <p class="text-stone-600 text-sm 2xl:text-base mb-2">Window needs to know:</p>
+                                    <p class="font-mono text-lg 2xl:text-2xl font-bold text-purple-600">"Have we seen this number?"</p>
+                                </div>
+                                <div class="bg-purple-200 p-4 2xl:p-6 rounded-lg">
+                                    <p class="text-xs 2xl:text-sm text-stone-600">Data Structure:</p>
+                                    <p class="font-bold text-purple-900 text-lg 2xl:text-xl">Set (Hash Set)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 2xl:p-10 rounded-xl">
+                            <p class="text-blue-900 font-bold text-lg 2xl:text-2xl mb-3 2xl:mb-4">
+                                <span class="material-symbols-outlined align-middle text-xl 2xl:text-2xl">lightbulb</span>
+                                The Core Idea:
+                            </p>
+                            <p class="text-blue-800 text-base 2xl:text-lg">
+                                Keep the <strong>same sliding motion</strong>, but instead of <code class="bg-blue-100 px-1 rounded">+=</code> and <code class="bg-blue-100 px-1 rounded">-=</code>, use <code class="bg-blue-100 px-1 rounded">.add()</code> and <code class="bg-blue-100 px-1 rounded">.remove()</code>.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. Interactive Visualization
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-4 2xl:mb-8">Walking Through the Example</h2>
+                        <p class="text-lg 2xl:text-xl text-stone-600 mb-6 2xl:mb-10">
+                            <code class="bg-stone-100 px-2 py-1 rounded font-mono">nums = [1, 2, 3, 1, 2, 3]</code>, 
+                            <code class="bg-stone-100 px-2 py-1 rounded font-mono">k = 2</code>
+                        </p>
+                        
+                        <!-- Interactive Array -->
+                        <div class="bg-stone-100 rounded-3xl p-8 2xl:p-16 mb-6 2xl:mb-10 flex flex-col items-center justify-center min-h-[220px] 2xl:min-h-[300px] relative">
+                            <div class="flex gap-2 md:gap-4 2xl:gap-6 mb-6 2xl:mb-10 flex-wrap justify-center">
+                                ${numbers.map((n, i) => `
+                                    <div id="dup-box-${i}" class="window-box w-14 h-14 md:w-16 md:h-16 2xl:w-24 2xl:h-24 bg-white rounded-xl 2xl:rounded-2xl border-2 border-stone-200 flex items-center justify-center text-2xl 2xl:text-4xl font-bold text-stone-400 shadow-sm">
+                                        <span>${n}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <!-- Set Display -->
+                            <div class="bg-white px-8 2xl:px-12 py-4 2xl:py-6 rounded-full shadow-sm border border-stone-200 mb-4 2xl:mb-6">
+                                <div class="text-[10px] 2xl:text-sm font-bold text-stone-400 uppercase tracking-widest mb-2">Current Window Set</div>
+                                <div id="dup-set" class="font-mono text-lg 2xl:text-2xl text-purple-600 font-bold min-h-[28px] 2xl:min-h-[36px]">{ }</div>
+                            </div>
+
+                            <!-- Status -->
+                            <div id="dup-status" class="text-sm 2xl:text-lg text-stone-500 min-h-[24px] 2xl:min-h-[32px]">Click "Next Step" to start</div>
+                        </div>
+
+                        <div class="flex gap-4 justify-center">
+                            <button onclick="resetDuplicateScenario()" class="px-6 2xl:px-10 py-2 2xl:py-4 rounded-lg text-stone-500 font-bold hover:bg-stone-100 transition 2xl:text-lg">Reset</button>
+                            <button onclick="nextDuplicateStep()" class="px-8 2xl:px-12 py-3 2xl:py-5 bg-purple-600 text-white rounded-xl 2xl:rounded-2xl font-bold hover:bg-purple-700 shadow-lg flex items-center gap-2 transform active:scale-95 transition 2xl:text-xl">
+                                Next Step <span class="material-symbols-outlined 2xl:text-2xl">play_circle</span>
+                            </button>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. Python Solution
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl 2xl:max-w-6xl h-full flex flex-col">
+                        <h2 class="text-2xl 2xl:text-4xl font-bold text-stone-800 mb-4 2xl:mb-8">Python Solution</h2>
+                        <div class="flex justify-center mb-4">
+                            <span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs 2xl:text-base font-bold uppercase rounded-full tracking-wide">Same Pattern, Different Data Structure</span>
+                        </div>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 flex flex-col text-left relative">
+                            <div class="absolute top-4 right-4 2xl:top-8 2xl:right-8 px-3 2xl:px-5 py-1 2xl:py-2 bg-gray-800 rounded-full text-xs 2xl:text-base text-gray-400 font-mono border border-gray-700">O(N) Time</div>
+                            <div class="code-container overflow-auto p-6 md:p-8 2xl:p-12 text-sm md:text-base 2xl:text-xl font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">contains_nearby_duplicate</span>(nums, k):
+    <span class="text-gray-500"># Step 1: Compute the first window [0 .. k]</span>
+    window_set = <span class="text-blue-400">set</span>()
+    
+    <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-blue-400">range</span>(<span class="text-blue-400">min</span>(k + <span class="text-green-400">1</span>, <span class="text-blue-400">len</span>(nums))):
+        <span class="text-gray-500"># Check for duplicate BEFORE adding</span>
+        <span class="text-purple-400">if</span> nums[i] <span class="text-purple-400">in</span> window_set:
+            <span class="text-purple-400">return</span> <span class="text-green-400">True</span>
+        window_set.add(nums[i])
+    
+    <span class="text-gray-500"># Step 2: Store best (not needed - early return)</span>
+    
+    <span class="text-gray-500"># Step 3: Slide the window</span>
+    <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-blue-400">range</span>(k + <span class="text-green-400">1</span>, <span class="text-blue-400">len</span>(nums)):
+        entering = nums[i]
+        leaving = nums[i - k - <span class="text-green-400">1</span>]
+        
+        <span class="text-gray-500"># Step 4: Update window</span>
+        <span class="text-yellow-300 font-bold">window_set.remove(leaving)</span>
+        
+        <span class="text-gray-500"># Check entering BEFORE adding</span>
+        <span class="text-purple-400">if</span> entering <span class="text-purple-400">in</span> window_set:
+            <span class="text-purple-400">return</span> <span class="text-green-400">True</span>
+        
+        <span class="text-yellow-300 font-bold">window_set.add(entering)</span>
+    
+    <span class="text-purple-400">return</span> <span class="text-green-400">False</span></code></pre>
+                            </div>
+                        </div>
+                        <div class="mt-6 2xl:mt-8 bg-purple-50 p-4 2xl:p-6 rounded-xl border border-purple-200">
+                            <p class="text-purple-900 font-bold text-sm 2xl:text-lg mb-2">Key Differences:</p>
+                            <ul class="text-purple-800 text-xs 2xl:text-base list-disc list-inside space-y-1">
+                                <li><code class="bg-purple-100 px-1 rounded">window_set</code> instead of <code class="bg-purple-100 px-1 rounded">current_sum</code></li>
+                                <li><code class="bg-purple-100 px-1 rounded">.add()</code> / <code class="bg-purple-100 px-1 rounded">.remove()</code> instead of <code class="bg-purple-100 px-1 rounded">+=</code> / <code class="bg-purple-100 px-1 rounded">-=</code></li>
+                                <li>Check for duplicates <strong>before</strong> adding to the set</li>
+                                <li>Early return when duplicate found</li>
+                            </ul>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Connection to Template
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl 2xl:max-w-7xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Mapping to Our Template</h2>
+                        
+                        <div class="space-y-6 2xl:space-y-8">
+                            ${[
+                                {
+                                    question: "What are we measuring?",
+                                    template: "window_value",
+                                    here: "window_set (Existence)",
+                                    borderClass: "border-blue-200",
+                                    bgClass: "bg-blue-50",
+                                    textClass: "text-blue-600",
+                                    textBoldClass: "text-blue-900"
+                                },
+                                {
+                                    question: "How do we update?",
+                                    template: "+= entering, -= leaving",
+                                    here: ".add(entering), .remove(leaving)",
+                                    borderClass: "border-purple-200",
+                                    bgClass: "bg-purple-50",
+                                    textClass: "text-purple-600",
+                                    textBoldClass: "text-purple-900"
+                                },
+                                {
+                                    question: "What is 'Best'?",
+                                    template: "max(best, current)",
+                                    here: "if nums[i] in set: return True (Early Exit)",
+                                    borderClass: "border-orange-200",
+                                    bgClass: "bg-orange-50",
+                                    textClass: "text-orange-600",
+                                    textBoldClass: "text-orange-900"
+                                }
+                            ].map((item, i) => `
+                                <div class="bg-white p-6 2xl:p-10 rounded-xl border-2 ${item.borderClass} shadow-sm">
+                                    <h4 class="font-bold text-stone-800 text-lg 2xl:text-2xl mb-4 2xl:mb-6">${item.question}</h4>
+                                    <div class="grid md:grid-cols-2 gap-4 2xl:gap-6">
+                                        <div class="bg-stone-50 p-4 2xl:p-6 rounded-lg">
+                                            <p class="text-xs 2xl:text-sm text-stone-500 mb-2">Template:</p>
+                                            <p class="font-mono text-sm 2xl:text-lg text-stone-700 font-bold">${item.template}</p>
+                                        </div>
+                                        <div class="${item.bgClass} p-4 2xl:p-6 rounded-lg">
+                                            <p class="text-xs 2xl:text-sm ${item.textClass} mb-2">Here:</p>
+                                            <p class="font-mono text-sm 2xl:text-lg ${item.textBoldClass} font-bold">${item.here}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="mt-8 2xl:mt-12 bg-orange-50 p-6 2xl:p-10 rounded-xl border-2 border-orange-300 text-center">
+                            <p class="text-orange-900 font-bold text-lg 2xl:text-2xl">
+                                <span class="material-symbols-outlined align-middle text-xl 2xl:text-2xl">auto_awesome</span>
+                                Same <strong>sliding motion</strong>, same <strong>5-step pattern</strong>!
+                            </p>
+                            <p class="text-orange-800 text-sm 2xl:text-base mt-2">
+                                Only the data structure and operations changed.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. Wrap Up
+                render: () => `
+                    <div class="animate-fade-in max-w-5xl 2xl:max-w-6xl">
+                        <h2 class="text-3xl 2xl:text-5xl font-bold text-stone-800 mb-6 2xl:mb-10">Why Patterns Matter</h2>
+                        
+                        <div class="bg-gradient-to-br from-purple-50 to-orange-50 p-8 2xl:p-12 rounded-3xl border-2 border-purple-200 shadow-lg mb-6 2xl:mb-10">
+                            <p class="text-lg 2xl:text-2xl text-stone-700 mb-4 2xl:mb-6">
+                                This problem proves why learning <strong class="text-purple-700">patterns</strong> is better than memorizing code.
+                            </p>
+                            <p class="text-base 2xl:text-xl text-stone-600 mb-6 2xl:mb-8">
+                                Because we understood the <strong>Fixed Sliding Window</strong> pattern, we solved a "duplicate" problem just as easily as a "sum" problem.
+                            </p>
+                            <div class="bg-white p-6 2xl:p-10 rounded-xl border-l-4 border-purple-500">
+                                <p class="font-bold text-purple-900 text-lg 2xl:text-2xl mb-2">
+                                    The Core Principle:
+                                </p>
+                                <p class="text-purple-800 text-base 2xl:text-xl font-mono">
+                                    Add incoming, remove outgoing
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-6 2xl:p-10 rounded-xl">
+                            <p class="text-blue-900 font-bold text-lg 2xl:text-xl mb-3 2xl:mb-4">
+                                <span class="material-symbols-outlined align-middle text-xl 2xl:text-2xl">school</span>
+                                Next Steps:
+                            </p>
+                            <ul class="text-blue-800 text-sm 2xl:text-base list-disc list-inside space-y-2">
+                                <li>Try solving <strong>LeetCode 219</strong> on your own</li>
+                                <li>Notice how the pattern adapts to different data structures</li>
+                                <li>Practice with more sliding window problems</li>
+                            </ul>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // --- Navigation Logic ---
+        function init() {
+            renderStep(0);
+            updateProgress();
+            updateDots();
+        }
+
+        function navigate(delta) {
+            const newStep = currentStep + delta;
+            if (newStep >= 0 && newStep < totalSteps) {
+                currentStep = newStep;
+                renderStep(currentStep);
+                updateProgress();
+                updateDots();
+                updateButtons();
+            }
+        }
+
+        function renderStep(stepIndex) {
+            const contentArea = document.getElementById('content-area');
+            if (steps[stepIndex]) {
+                contentArea.innerHTML = steps[stepIndex].render();
+                // Re-initialize interactive elements if needed
+                if (stepIndex === 4) {
+                    resetDuplicateScenario();
+                }
+            }
+        }
+
+        function updateProgress() {
+            const progressBar = document.getElementById('progress-bar');
+            const percentage = ((currentStep + 1) / totalSteps) * 100;
+            progressBar.style.width = percentage + '%';
+        }
+
+        function updateDots() {
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition ${i === currentStep ? 'bg-orange-500 w-8' : 'bg-stone-300'}`;
+                dot.onclick = () => {
+                    currentStep = i;
+                    renderStep(currentStep);
+                    updateProgress();
+                    updateDots();
+                    updateButtons();
+                };
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            prevBtn.disabled = currentStep === 0;
+            if (currentStep === totalSteps - 1) {
+                nextBtn.innerHTML = 'Finish <span class="material-symbols-outlined">check</span>';
+            } else {
+                nextBtn.innerHTML = 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+            }
+        }
+
+        // --- Duplicate Scenario Logic ---
+        function resetDuplicateScenario() {
+            scenarioIndex = 0;
+            windowSet = new Set();
+            numbers.forEach((_, i) => {
+                const el = document.getElementById(`dup-box-${i}`);
+                if (el) {
+                    el.className = "window-box w-14 h-14 md:w-16 md:h-16 2xl:w-24 2xl:h-24 bg-white rounded-xl 2xl:rounded-2xl border-2 border-stone-200 flex items-center justify-center text-2xl 2xl:text-4xl font-bold text-stone-400 shadow-sm";
+                    el.style.opacity = '1';
+                }
+            });
+            const setEl = document.getElementById('dup-set');
+            if (setEl) setEl.textContent = '{ }';
+            const statusEl = document.getElementById('dup-status');
+            if (statusEl) statusEl.textContent = 'Click "Next Step" to start';
+        }
+
+        function nextDuplicateStep() {
+            if (scenarioIndex === 0) {
+                // Step 1: Compute first window (indices 0 to k)
+                for (let i = 0; i <= k && i < numbers.length; i++) {
+                    const el = document.getElementById(`dup-box-${i}`);
+                    if (el) {
+                        el.classList.add('window-active', 'text-orange-900');
+                        el.classList.remove('text-stone-400', 'bg-white', 'border-stone-200');
+                    }
+                    if (windowSet.has(numbers[i])) {
+                        // Duplicate found!
+                        el.classList.add('highlight-duplicate');
+                        document.getElementById('dup-status').textContent = `Duplicate found! ${numbers[i]} appears twice. Return True!`;
+                        document.getElementById('dup-status').classList.add('text-green-600', 'font-bold');
+                        return;
+                    }
+                    windowSet.add(numbers[i]);
+                }
+                document.getElementById('dup-set').textContent = `{${Array.from(windowSet).join(', ')}}`;
+                document.getElementById('dup-status').textContent = `First window: indices 0-${k}. Set = {${Array.from(windowSet).join(', ')}}. No duplicates yet.`;
+                scenarioIndex = k + 1;
+            } else if (scenarioIndex < numbers.length) {
+                // Step 3+: Slide the window
+                const i = scenarioIndex;
+                const entering = numbers[i];
+                const leavingIndex = i - k - 1;
+                
+                // Remove leaving element
+                if (leavingIndex >= 0) {
+                    const leavingEl = document.getElementById(`dup-box-${leavingIndex}`);
+                    if (leavingEl) {
+                        leavingEl.classList.add('highlight-leave');
+                        leavingEl.classList.remove('window-active', 'text-orange-900');
+                    }
+                    windowSet.delete(numbers[leavingIndex]);
+                }
+                
+                // Highlight entering element
+                const enteringEl = document.getElementById(`dup-box-${i}`);
+                if (enteringEl) {
+                    enteringEl.classList.add('highlight-enter', 'window-active', 'text-green-900');
+                    enteringEl.classList.remove('text-stone-400', 'bg-white', 'border-stone-200');
+                }
+                
+                // Check for duplicate BEFORE adding
+                if (windowSet.has(entering)) {
+                    enteringEl.classList.add('highlight-duplicate');
+                    document.getElementById('dup-status').textContent = `Duplicate found! ${entering} is already in the set. Return True!`;
+                    document.getElementById('dup-status').classList.add('text-green-600', 'font-bold');
+                    return;
+                }
+                
+                // Add entering element
+                windowSet.add(entering);
+                document.getElementById('dup-set').textContent = `{${Array.from(windowSet).join(', ')}}`;
+                document.getElementById('dup-status').textContent = `Index ${i}: Removed ${numbers[leavingIndex] || 'none'}, added ${entering}. Set = {${Array.from(windowSet).join(', ')}}.`;
+                
+                scenarioIndex++;
+            } else {
+                document.getElementById('dup-status').textContent = 'No duplicates found. Return False.';
+                document.getElementById('dup-status').classList.add('text-stone-600', 'font-bold');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

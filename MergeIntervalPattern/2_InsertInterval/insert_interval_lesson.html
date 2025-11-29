@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insert Interval Pattern - Interactive Lesson</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 { font-family: 'Lora', serif; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        
+        .phase-before { background: #dbeafe; border-color: #3b82f6; }
+        .phase-merge { background: #fef3c7; border-color: #f59e0b; }
+        .phase-after { background: #dcfce7; border-color: #22c55e; }
+        
+        .code-container::-webkit-scrollbar { height: 8px; }
+        .code-container::-webkit-scrollbar-track { background: #1f2937; }
+        .code-container::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-amber-200 border-2 border-amber-400 shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-amber-600 text-2xl">add_box</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <span class="text-xs text-stone-500 uppercase tracking-wider font-bold">Interval Patterns</span>
+            </div>
+        </div>
+    </nav>
+
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100 flex flex-col relative min-h-[80vh]">
+        
+        <div class="w-full h-2 bg-stone-100">
+            <div id="progress-bar" class="h-full bg-amber-500 transition-all duration-500 ease-out" style="width: 10%;"></div>
+        </div>
+
+        <div id="content-area" class="flex-grow p-6 md:p-12 flex flex-col justify-center items-center text-center overflow-y-auto">
+        </div>
+
+        <div class="bg-stone-50 p-6 border-t border-stone-100 flex justify-between items-center">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 font-bold px-4 py-2 rounded-lg hover:bg-stone-200 disabled:opacity-30 transition">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            <div id="dots-container" class="flex gap-2"></div>
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-amber-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-amber-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 12;
+        let walkStep = 0;
+
+        const steps = [
+            {
+                render: () => `
+                    <div class="animate-fade-in max-w-5xl">
+                        <h1 class="text-4xl md:text-6xl font-bold text-stone-800 mb-8">Insert Interval Pattern</h1>
+                        <div class="bg-amber-50 border border-amber-200 p-8 rounded-3xl inline-block shadow-sm">
+                            <span class="material-symbols-outlined text-5xl text-amber-500 mb-6">add_box</span>
+                            <h3 class="text-xl font-bold text-amber-900 mb-4">The Three-Phase Approach</h3>
+                            <p class="text-stone-600">Insert a new interval into sorted, non-overlapping intervals and merge if necessary.</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">The Scenario</h2>
+                        <p class="text-lg text-stone-600 mb-8">Insert <strong class="text-amber-600">[4,8]</strong> into sorted intervals and merge.</p>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="text-left mb-6">
+                                <div class="font-mono text-lg text-stone-800 mb-2">intervals = [[1,2], [3,5], [6,7], [8,10], [12,16]]</div>
+                                <div class="font-mono text-lg text-amber-600">newInterval = [4,8]</div>
+                            </div>
+                            
+                            <!-- Visual Timeline -->
+                            <div class="relative h-24 bg-white rounded-2xl p-4 mt-6">
+                                <div class="absolute bottom-4 left-8 right-8 h-1 bg-stone-200 rounded"></div>
+                                <div class="absolute bottom-8 left-8 right-8" style="height: 50px;">
+                                    <div class="absolute h-6 bg-blue-400 rounded" style="left: 5%; width: 5%;"><span class="text-xs text-white px-1">[1,2]</span></div>
+                                    <div class="absolute h-6 bg-blue-400 rounded" style="left: 15%; width: 10%;"><span class="text-xs text-white px-1">[3,5]</span></div>
+                                    <div class="absolute h-6 bg-blue-400 rounded" style="left: 30%; width: 5%;"><span class="text-xs text-white px-1">[6,7]</span></div>
+                                    <div class="absolute h-6 bg-blue-400 rounded" style="left: 40%; width: 10%;"><span class="text-xs text-white px-1">[8,10]</span></div>
+                                    <div class="absolute h-6 bg-blue-400 rounded" style="left: 60%; width: 20%;"><span class="text-xs text-white px-1">[12,16]</span></div>
+                                    <div class="absolute h-6 bg-amber-400 rounded border-2 border-amber-600" style="left: 20%; width: 20%; top: 24px;"><span class="text-xs text-white px-1">[4,8] NEW</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-yellow-100 px-4 py-2 rounded-full text-yellow-800 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">lightbulb</span> The Key Insight
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Three Phases</h2>
+                        
+                        <div class="grid md:grid-cols-3 gap-6">
+                            <div class="bg-blue-50 p-6 rounded-2xl border-2 border-blue-200">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mb-4 mx-auto">1</div>
+                                <h3 class="font-bold text-blue-800 mb-2">BEFORE</h3>
+                                <p class="text-sm text-blue-700">Intervals that end before new starts</p>
+                                <code class="text-xs bg-blue-100 px-2 py-1 rounded mt-2 block">end < new.start</code>
+                            </div>
+                            
+                            <div class="bg-amber-50 p-6 rounded-2xl border-2 border-amber-300 transform scale-105 shadow-lg">
+                                <div class="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold mb-4 mx-auto">2</div>
+                                <h3 class="font-bold text-amber-800 mb-2">MERGE</h3>
+                                <p class="text-sm text-amber-700">Overlapping intervals → combine</p>
+                                <code class="text-xs bg-amber-100 px-2 py-1 rounded mt-2 block">start ≤ new.end</code>
+                            </div>
+                            
+                            <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-200">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center font-bold mb-4 mx-auto">3</div>
+                                <h3 class="font-bold text-green-800 mb-2">AFTER</h3>
+                                <p class="text-sm text-green-700">Remaining intervals</p>
+                                <code class="text-xs bg-green-100 px-2 py-1 rounded mt-2 block">everything else</code>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // Why Phase 2 only checks one condition
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-red-100 px-4 py-2 rounded-full text-red-800 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">help</span> Wait... why only one check?
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Understanding Phase 2's Condition</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg border border-stone-200 p-6 mb-6">
+                            <p class="text-lg text-stone-700 mb-4">The <strong>complete overlap condition</strong> requires TWO checks:</p>
+                            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                                <div class="bg-blue-50 p-3 rounded-lg text-center">
+                                    <code class="text-blue-700 font-bold">new.start ≤ interval.end</code>
+                                </div>
+                                <div class="bg-purple-50 p-3 rounded-lg text-center">
+                                    <code class="text-purple-700 font-bold">interval.start ≤ new.end</code>
+                                </div>
+                            </div>
+                            <p class="text-stone-600">But Phase 2 only checks the second one. Why?</p>
+                        </div>
+                        
+                        <div class="bg-amber-50 p-6 rounded-2xl border-2 border-amber-200">
+                            <p class="text-amber-800 font-bold text-lg mb-3">Because Phase 1 stopping guarantees the first!</p>
+                            <div class="bg-white p-4 rounded-xl font-mono text-sm">
+                                <div class="text-stone-500">Phase 1 condition: interval.end < new.start</div>
+                                <div class="text-stone-500 mt-2">When Phase 1 STOPS (condition is FALSE):</div>
+                                <div class="text-amber-600 font-bold mt-1">→ NOT(interval.end < new.start)</div>
+                                <div class="text-amber-600 font-bold">→ interval.end ≥ new.start</div>
+                                <div class="text-green-600 font-bold mt-2">→ new.start ≤ interval.end ✓ (First condition guaranteed!)</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 text-center">
+                            <span class="inline-block bg-green-100 text-green-800 px-6 py-3 rounded-full font-bold">
+                                ✓ Phase 1 stopping guarantees one overlap condition!
+                            </span>
+                        </div>
+                        
+                        <div class="mt-6 bg-stone-100 p-4 rounded-xl border border-stone-200">
+                            <p class="text-stone-700">
+                                <strong>💡 Tip:</strong> If this feels confusing, you can always use the <strong>full overlap condition</strong> in Phase 2 — it's also 100% correct! Use whichever feels more natural.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Interactive Walkthrough</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="font-mono text-sm mb-6 text-stone-700">
+                                intervals = [[1,2], [3,5], [6,7], [8,10], [12,16]], new = [4,8]
+                            </div>
+                            
+                            <div id="walk-display" class="bg-white p-6 rounded-xl min-h-[150px] flex items-center justify-center mb-6">
+                                <p class="text-stone-400">Click "Step" to begin...</p>
+                            </div>
+                            
+                            <div id="walk-result" class="bg-stone-800 text-white p-4 rounded-xl font-mono text-sm mb-6">
+                                result = []
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetWalk()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200 transition">Reset</button>
+                                <button onclick="nextWalk()" class="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 shadow-lg flex items-center gap-2 transition">
+                                    Step <span class="material-symbols-outlined">play_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Core Logic</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-blue-50 p-6 rounded-2xl border-l-4 border-blue-500">
+                                <div class="font-bold text-blue-800 mb-2">Phase 1: Add BEFORE</div>
+                                <code class="text-sm text-blue-700 font-mono">while interval.end < new.start: result.append(interval)</code>
+                            </div>
+                            
+                            <div class="bg-amber-50 p-6 rounded-2xl border-l-4 border-amber-500">
+                                <div class="font-bold text-amber-800 mb-2">Phase 2: MERGE Overlapping</div>
+                                <code class="text-sm text-amber-700 font-mono block mb-2">while interval.start <= new.end:</code>
+                                <code class="text-sm text-amber-700 font-mono block ml-4">new.start = min(new.start, interval.start)</code>
+                                <code class="text-sm text-amber-700 font-mono block ml-4">new.end = max(new.end, interval.end)</code>
+                                <code class="text-sm text-amber-700 font-mono block">result.append(new)</code>
+                            </div>
+                            
+                            <div class="bg-green-50 p-6 rounded-2xl border-l-4 border-green-500">
+                                <div class="font-bold text-green-800 mb-2">Phase 3: Add AFTER</div>
+                                <code class="text-sm text-green-700 font-mono">while more: result.append(interval)</code>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-3xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">The 3-Phase Pattern</h2>
+                        
+                        <div class="space-y-4">
+                            ${[
+                                {title: "Phase 1: Before", desc: "Add intervals ending before new starts", icon: "arrow_back", phase: "before"},
+                                {title: "Phase 2: Merge", desc: "Combine overlapping with min/max", icon: "merge", phase: "merge", highlight: true},
+                                {title: "Phase 3: After", desc: "Add all remaining intervals", icon: "arrow_forward", phase: "after"}
+                            ].map((step, i) => `
+                                <div class="flex items-center gap-4 p-5 rounded-xl transition ${step.highlight ? 'bg-amber-50 border-2 border-amber-300 shadow-md transform scale-105' : 'bg-white border border-stone-200'}">
+                                    <div class="w-12 h-12 rounded-full ${step.highlight ? 'bg-amber-500 text-white' : 'bg-stone-200 text-stone-600'} flex items-center justify-center">
+                                        <span class="material-symbols-outlined">${step.icon}</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <h4 class="font-bold ${step.highlight ? 'text-amber-900' : 'text-stone-800'}">${step.title}</h4>
+                                        <p class="${step.highlight ? 'text-amber-700' : 'text-stone-500'} text-sm">${step.desc}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="mt-6 bg-amber-100 p-4 rounded-xl text-center">
+                            <p class="text-amber-800 font-bold">Key: Three sequential while loops!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl h-full flex flex-col">
+                        <h2 class="text-2xl font-bold text-stone-800 mb-6">Python Solution</h2>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 text-left">
+                            <div class="absolute top-4 right-4 px-3 py-1 bg-gray-800 rounded-full text-xs text-gray-400 font-mono">O(n)</div>
+                            <div class="code-container overflow-auto p-6 text-sm font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">insert</span>(intervals, newInterval):
+    result = []
+    i = <span class="text-green-400">0</span>
+    n = <span class="text-blue-400">len</span>(intervals)
+    
+    <span class="text-gray-500"># Phase 1: Add BEFORE intervals</span>
+    <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> intervals[i][<span class="text-green-400">1</span>] < newInterval[<span class="text-green-400">0</span>]:
+        result.<span class="text-blue-400">append</span>(intervals[i])
+        i += <span class="text-green-400">1</span>
+    
+    <span class="text-gray-500"># Phase 2: MERGE overlapping</span>
+    <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> intervals[i][<span class="text-green-400">0</span>] <= newInterval[<span class="text-green-400">1</span>]:
+        <span class="text-yellow-300">newInterval[0] = min(newInterval[0], intervals[i][0])</span>
+        <span class="text-yellow-300">newInterval[1] = max(newInterval[1], intervals[i][1])</span>
+        i += <span class="text-green-400">1</span>
+    result.<span class="text-blue-400">append</span>(newInterval)
+    
+    <span class="text-gray-500"># Phase 3: Add AFTER intervals</span>
+    <span class="text-purple-400">while</span> i < n:
+        result.<span class="text-blue-400">append</span>(intervals[i])
+        i += <span class="text-green-400">1</span>
+    
+    <span class="text-purple-400">return</span> result</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl h-full flex flex-col">
+                        <h2 class="text-2xl font-bold text-stone-800 mb-6">The Reusable Template</h2>
+                        <div class="flex justify-center mb-4">
+                            <span class="px-4 py-1 bg-amber-100 text-amber-700 text-sm font-bold uppercase rounded-full">Customize This</span>
+                        </div>
+                        
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 text-left">
+                            <div class="code-container overflow-auto p-6 text-sm font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">insert_interval_template</span>(intervals, newInterval):
+    result = []
+    i = <span class="text-green-400">0</span>
+    n = <span class="text-blue-400">len</span>(intervals)
+    
+    <span class="text-gray-500"># ════════════════════════════════════════</span>
+    <span class="text-gray-500"># PHASE 1: Add intervals BEFORE</span>
+    <span class="text-gray-500"># Condition: interval.end < new.start</span>
+    <span class="text-gray-500"># ════════════════════════════════════════</span>
+    <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> intervals[i][<span class="text-green-400">1</span>] < newInterval[<span class="text-green-400">0</span>]:
+        result.<span class="text-blue-400">append</span>(intervals[i])
+        i += <span class="text-green-400">1</span>
+    
+    <span class="text-gray-500"># ════════════════════════════════════════</span>
+    <span class="text-gray-500"># PHASE 2: MERGE overlapping</span>
+    <span class="text-gray-500"># Condition: interval.start <= new.end</span>
+    <span class="text-gray-500"># ════════════════════════════════════════</span>
+    <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> intervals[i][<span class="text-green-400">0</span>] <= newInterval[<span class="text-green-400">1</span>]:
+        newInterval[<span class="text-green-400">0</span>] = <span class="text-blue-400">min</span>(newInterval[<span class="text-green-400">0</span>], intervals[i][<span class="text-green-400">0</span>])
+        newInterval[<span class="text-green-400">1</span>] = <span class="text-blue-400">max</span>(newInterval[<span class="text-green-400">1</span>], intervals[i][<span class="text-green-400">1</span>])
+        i += <span class="text-green-400">1</span>
+    result.<span class="text-blue-400">append</span>(newInterval)
+    
+    <span class="text-gray-500"># ════════════════════════════════════════</span>
+    <span class="text-gray-500"># PHASE 3: Add remaining AFTER</span>
+    <span class="text-gray-500"># ════════════════════════════════════════</span>
+    <span class="text-purple-400">while</span> i < n:
+        result.<span class="text-blue-400">append</span>(intervals[i])
+        i += <span class="text-green-400">1</span>
+    
+    <span class="text-purple-400">return</span> result</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Edge Cases</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            ${[
+                                { title: "Insert at Start", input: "[[3,5]], [1,2]", output: "[[1,2],[3,5]]", color: "blue" },
+                                { title: "Insert at End", input: "[[1,2]], [5,6]", output: "[[1,2],[5,6]]", color: "green" },
+                                { title: "Covers All", input: "[[2,3],[4,5]], [1,10]", output: "[[1,10]]", color: "amber" },
+                                { title: "No Overlap", input: "[[1,2],[5,6]], [3,4]", output: "[[1,2],[3,4],[5,6]]", color: "purple" },
+                                { title: "Touching", input: "[[1,5]], [5,7]", output: "[[1,7]]", color: "pink" },
+                                { title: "Empty", input: "[], [1,5]", output: "[[1,5]]", color: "stone" },
+                            ].map(c => `
+                                <div class="bg-white p-4 rounded-xl border-2 border-${c.color}-200 text-left">
+                                    <div class="text-sm text-${c.color}-600 font-bold uppercase mb-2">${c.title}</div>
+                                    <div class="font-mono text-xs">
+                                        <div class="text-stone-500">In: ${c.input}</div>
+                                        <div class="text-${c.color}-600 font-bold">Out: ${c.output}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">When to Use This Pattern?</h2>
+                        
+                        <div class="grid md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-white p-6 rounded-2xl border-2 border-stone-200 shadow-sm">
+                                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                    <span class="material-symbols-outlined">sort</span>
+                                </div>
+                                <h3 class="font-bold text-stone-800 mb-2">Sorted Input</h3>
+                                <p class="text-sm text-stone-500">Intervals are already sorted by start time</p>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl border-2 border-amber-300 shadow-md transform scale-105">
+                                <div class="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center mb-4 mx-auto">
+                                    <span class="material-symbols-outlined">add</span>
+                                </div>
+                                <h3 class="font-bold text-stone-800 mb-2">Insert/Add</h3>
+                                <p class="text-sm text-stone-500">Adding a new interval to existing list</p>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl border-2 border-stone-200 shadow-sm">
+                                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                                    <span class="material-symbols-outlined">merge</span>
+                                </div>
+                                <h3 class="font-bold text-stone-800 mb-2">Merge if Overlap</h3>
+                                <p class="text-sm text-stone-500">Need to maintain non-overlapping property</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-amber-100 p-6 rounded-xl text-center">
+                            <p class="text-amber-800 font-bold text-lg">All 3? → Use Insert Interval Pattern (3 Phases)</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-3xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Summary</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden text-left">
+                            <div class="p-5 border-b border-stone-100 flex items-center gap-4 bg-blue-50">
+                                <div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">1</div>
+                                <div>
+                                    <div class="font-bold text-stone-800">Phase 1: BEFORE</div>
+                                    <div class="text-sm text-stone-500 font-mono">interval.end < new.start</div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-b border-stone-100 flex items-center gap-4 bg-amber-50">
+                                <div class="w-10 h-10 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold">2</div>
+                                <div>
+                                    <div class="font-bold text-stone-800">Phase 2: MERGE</div>
+                                    <div class="text-sm text-stone-500 font-mono">interval.start ≤ new.end → min/max</div>
+                                </div>
+                            </div>
+                            <div class="p-5 flex items-center gap-4 bg-green-50">
+                                <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold">3</div>
+                                <div>
+                                    <div class="font-bold text-stone-800">Phase 3: AFTER</div>
+                                    <div class="text-sm text-stone-500 font-mono">Add all remaining</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-stone-900 text-white p-6 rounded-2xl text-left font-mono text-sm">
+                            <div class="text-stone-400 mb-2"># Quick Reference</div>
+                            <div class="text-amber-400">Time: O(n) — no sorting needed!</div>
+                            <div class="text-green-400">Space: O(n)</div>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        function init() {
+            resetWalk();
+            updateUI();
+        }
+
+        function navigate(direction) {
+            currentStep += direction;
+            if (currentStep < 0) currentStep = 0;
+            if (currentStep >= totalSteps) currentStep = totalSteps - 1;
+            resetWalk();
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            document.getElementById('progress-bar').style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            
+            const nextBtn = document.getElementById('next-btn');
+            if (currentStep === totalSteps - 1) {
+                nextBtn.innerHTML = `Done <span class="material-symbols-outlined">check_circle</span>`;
+                nextBtn.onclick = () => alert("Great job! You've mastered Insert Interval!");
+            } else {
+                nextBtn.innerHTML = `Next <span class="material-symbols-outlined">arrow_forward</span>`;
+                nextBtn.onclick = () => navigate(1);
+            }
+
+            document.getElementById('dots-container').innerHTML = Array(totalSteps).fill(0).map((_, i) => `
+                <div class="w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === currentStep ? 'bg-amber-500 scale-125' : 'bg-stone-300'}"></div>
+            `).join('');
+        }
+
+        function resetWalk() { walkStep = 0; }
+
+        function nextWalk() {
+            const d = document.getElementById('walk-display');
+            const r = document.getElementById('walk-result');
+            if (!d) return;
+            
+            const states = [
+                { display: `<div class="text-blue-600"><strong>Phase 1:</strong> Check [1,2] — 2 < 4? <span class="text-green-600">YES</span> → Add</div>`, result: "result = [[1,2]]" },
+                { display: `<div class="text-blue-600"><strong>Phase 1:</strong> Check [3,5] — 5 < 4? <span class="text-red-600">NO</span> → Stop Phase 1</div>`, result: "result = [[1,2]]" },
+                { display: `<div class="text-amber-600"><strong>Phase 2:</strong> Check [3,5] — 3 ≤ 8? <span class="text-green-600">YES</span> → Merge!</div><div class="mt-2 font-mono text-sm">new = [min(4,3), max(8,5)] = [3,8]</div>`, result: "result = [[1,2]], merging..." },
+                { display: `<div class="text-amber-600"><strong>Phase 2:</strong> Check [6,7] — 6 ≤ 8? <span class="text-green-600">YES</span> → Merge!</div><div class="mt-2 font-mono text-sm">new = [min(3,6), max(8,7)] = [3,8]</div>`, result: "result = [[1,2]], merging..." },
+                { display: `<div class="text-amber-600"><strong>Phase 2:</strong> Check [8,10] — 8 ≤ 8? <span class="text-green-600">YES</span> → Merge!</div><div class="mt-2 font-mono text-sm">new = [min(3,8), max(8,10)] = [3,10]</div>`, result: "result = [[1,2]], merging..." },
+                { display: `<div class="text-amber-600"><strong>Phase 2:</strong> Check [12,16] — 12 ≤ 10? <span class="text-red-600">NO</span> → Stop Phase 2</div><div class="mt-2">Add merged [3,10]</div>`, result: "result = [[1,2], [3,10]]" },
+                { display: `<div class="text-green-600"><strong>Phase 3:</strong> Add remaining [12,16]</div>`, result: "result = [[1,2], [3,10], [12,16]]" },
+                { display: `<div class="text-3xl text-green-600 font-bold">✓ Done!</div>`, result: "result = [[1,2], [3,10], [12,16]]" },
+            ];
+            
+            if (walkStep < states.length) {
+                d.innerHTML = states[walkStep].display;
+                r.innerHTML = states[walkStep].result;
+                walkStep++;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

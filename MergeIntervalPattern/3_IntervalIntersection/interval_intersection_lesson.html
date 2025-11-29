@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interval Intersection Pattern - Interactive Lesson</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- html2canvas for screenshot capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4); }
+            50% { box-shadow: 0 0 20px 10px rgba(251, 191, 36, 0.2); }
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        .timeline-bar {
+            transition: all 0.3s ease-out;
+        }
+        
+        .intersection-highlight {
+            background: repeating-linear-gradient(
+                45deg,
+                #fbbf24,
+                #fbbf24 10px,
+                #f59e0b 10px,
+                #f59e0b 20px
+            );
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-amber-200 border-2 border-amber-400 overflow-hidden shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-amber-600 text-2xl">join_inner</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <p class="text-stone-500 text-sm">Interval Intersection Pattern</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Card -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] min-h-[75vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Progress Bar -->
+        <div class="h-2 bg-stone-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 flex flex-col items-center justify-center p-8 2xl:p-16 text-center overflow-auto">
+            <!-- Content injected by JS -->
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="border-t border-stone-200 px-8 py-4 flex justify-between items-center bg-stone-50">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 px-6 py-2 rounded-lg font-bold hover:bg-stone-200 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            
+            <div id="dots-container" class="flex gap-2"></div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-amber-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-amber-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 12;
+        let demoStep = 0;
+
+        const steps = [
+            {
+                // 0. Intro
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-amber-100 px-4 py-2 rounded-full text-amber-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">join_inner</span> Interval Pattern #3
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold text-stone-800 mb-6">Interval Intersection</h1>
+                        <p class="text-xl text-stone-600 mb-8">Finding where two schedules overlap!</p>
+                        <div class="bg-amber-50 p-6 rounded-2xl inline-block border-2 border-amber-200">
+                            <p class="text-amber-800">Think of it like finding common free time between two people.</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. The Problem
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Scenario</h2>
+                        
+                        <div class="bg-stone-100 p-6 rounded-2xl mb-8">
+                            <p class="text-lg text-stone-700 mb-4">Given two sorted lists of intervals, find ALL their intersections.</p>
+                            <div class="font-mono text-sm bg-stone-800 text-white p-4 rounded-xl">
+                                <div class="text-amber-400">firstList  = [[0,2], [5,10], [13,23], [24,25]]</div>
+                                <div class="text-blue-400">secondList = [[1,5], [8,12], [15,24], [25,26]]</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline Visualization -->
+                        <div class="bg-white p-6 rounded-2xl shadow-lg">
+                            <div class="text-sm text-stone-500 mb-4">Timeline Visualization</div>
+                            <div class="relative h-40">
+                                <!-- Timeline axis -->
+                                <div class="absolute bottom-8 left-0 right-0 h-0.5 bg-stone-300"></div>
+                                
+                                <!-- First list (top) -->
+                                <div class="absolute top-0 left-0 right-0 h-12 flex items-center">
+                                    <span class="text-xs text-amber-600 font-bold w-16">List 1:</span>
+                                    <div class="relative flex-1 h-8">
+                                        <div class="absolute bg-amber-400 h-full rounded" style="left: 0%; width: 8%"></div>
+                                        <div class="absolute bg-amber-400 h-full rounded" style="left: 19%; width: 19%"></div>
+                                        <div class="absolute bg-amber-400 h-full rounded" style="left: 50%; width: 38%"></div>
+                                        <div class="absolute bg-amber-400 h-full rounded" style="left: 92%; width: 4%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Second list (middle) -->
+                                <div class="absolute top-14 left-0 right-0 h-12 flex items-center">
+                                    <span class="text-xs text-blue-600 font-bold w-16">List 2:</span>
+                                    <div class="relative flex-1 h-8">
+                                        <div class="absolute bg-blue-400 h-full rounded" style="left: 4%; width: 15%"></div>
+                                        <div class="absolute bg-blue-400 h-full rounded" style="left: 31%; width: 15%"></div>
+                                        <div class="absolute bg-blue-400 h-full rounded" style="left: 58%; width: 35%"></div>
+                                        <div class="absolute bg-blue-400 h-full rounded" style="left: 96%; width: 4%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. The Key Insight - Intersection Formula
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-yellow-100 px-4 py-2 rounded-full text-yellow-800 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">lightbulb</span> Key Insight
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">How to Find an Intersection</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                            <p class="text-lg text-stone-700 mb-6">For two intervals A and B, their intersection is:</p>
+                            
+                            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                                <div class="bg-amber-50 p-4 rounded-xl border-2 border-amber-200 text-center">
+                                    <div class="text-sm text-amber-600 font-bold mb-2">Intersection Start</div>
+                                    <code class="text-2xl text-amber-800 font-bold">max(A.start, B.start)</code>
+                                    <p class="text-xs text-amber-600 mt-2">Can't start before either interval</p>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-xl border-2 border-orange-200 text-center">
+                                    <div class="text-sm text-orange-600 font-bold mb-2">Intersection End</div>
+                                    <code class="text-2xl text-orange-800 font-bold">min(A.end, B.end)</code>
+                                    <p class="text-xs text-orange-600 mt-2">Can't extend past either interval</p>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-green-50 p-4 rounded-xl border-2 border-green-200 text-center">
+                                <div class="text-sm text-green-600 font-bold mb-2">Valid Intersection?</div>
+                                <code class="text-xl text-green-800 font-bold">start ≤ end</code>
+                                <p class="text-xs text-green-600 mt-2">If start > end, there's no overlap!</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. Visual Example
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Visual Example</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-200">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-4">Overlap Exists</div>
+                                <div class="font-mono text-sm mb-4">
+                                    A = [5, 10]<br>B = [8, 12]
+                                </div>
+                                <div class="bg-white p-4 rounded-xl">
+                                    <div class="relative h-16">
+                                        <div class="absolute top-0 left-[25%] w-[25%] h-6 bg-amber-400 rounded flex items-center justify-center text-xs text-white font-bold">A</div>
+                                        <div class="absolute top-8 left-[40%] w-[20%] h-6 bg-blue-400 rounded flex items-center justify-center text-xs text-white font-bold">B</div>
+                                        <div class="absolute top-4 left-[40%] w-[10%] h-4 bg-green-500 rounded opacity-75"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 font-mono text-sm">
+                                    start = max(5,8) = 8<br>
+                                    end = min(10,12) = 10<br>
+                                    <span class="text-green-600 font-bold">8 ≤ 10 ✓ → [8,10]</span>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200">
+                                <div class="text-sm text-red-600 font-bold uppercase mb-4">No Overlap</div>
+                                <div class="font-mono text-sm mb-4">
+                                    A = [0, 2]<br>B = [5, 8]
+                                </div>
+                                <div class="bg-white p-4 rounded-xl">
+                                    <div class="relative h-16">
+                                        <div class="absolute top-0 left-[0%] w-[20%] h-6 bg-amber-400 rounded flex items-center justify-center text-xs text-white font-bold">A</div>
+                                        <div class="absolute top-8 left-[50%] w-[30%] h-6 bg-blue-400 rounded flex items-center justify-center text-xs text-white font-bold">B</div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 font-mono text-sm">
+                                    start = max(0,5) = 5<br>
+                                    end = min(2,8) = 2<br>
+                                    <span class="text-red-600 font-bold">5 > 2 ✗ → No intersection</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. Two Pointer Approach
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Two-Pointer Technique</h2>
+                        
+                        <div class="bg-stone-900 text-white p-8 rounded-2xl mb-8">
+                            <div class="text-amber-400 font-bold mb-4">THE APPROACH</div>
+                            <div class="space-y-4 text-left">
+                                <div class="flex items-center gap-4">
+                                    <span class="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center font-bold">1</span>
+                                    <span>Use pointer <code class="bg-stone-700 px-2 rounded">i</code> for firstList</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center font-bold">2</span>
+                                    <span>Use pointer <code class="bg-stone-700 px-2 rounded">j</code> for secondList</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center font-bold">3</span>
+                                    <span>Find intersection, add if valid</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <span class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center font-bold">4</span>
+                                    <span>Move pointer whose interval <strong>ends first</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-purple-50 p-6 rounded-2xl border-2 border-purple-200">
+                            <p class="text-purple-800 font-bold text-lg mb-2">Why move the one that ends first?</p>
+                            <p class="text-purple-700">That interval can't intersect with any future intervals from the other list — they all start later!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. The Pattern Card
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Pattern</h2>
+                        
+                        <div class="bg-stone-900 text-white p-8 rounded-2xl text-left font-mono">
+                            <div class="text-amber-400 mb-4 text-lg font-bold">INTERVAL INTERSECTION PATTERN</div>
+                            <div class="space-y-4">
+                                <div class="bg-stone-800 p-4 rounded-lg">
+                                    <span class="text-purple-400">i, j = 0, 0</span>
+                                </div>
+                                <div class="bg-stone-800 p-4 rounded-lg">
+                                    <span class="text-purple-400">while</span> i < len(list1) <span class="text-purple-400">and</span> j < len(list2):
+                                </div>
+                                <div class="bg-amber-900/30 p-4 rounded-lg ml-4">
+                                    start = <span class="text-yellow-400">max</span>(list1[i][0], list2[j][0])<br>
+                                    end = <span class="text-yellow-400">min</span>(list1[i][1], list2[j][1])
+                                </div>
+                                <div class="bg-green-900/30 p-4 rounded-lg ml-4">
+                                    <span class="text-purple-400">if</span> start <= end:<br>
+                                    <span class="ml-4">result.append([start, end])</span>
+                                </div>
+                                <div class="bg-blue-900/30 p-4 rounded-lg ml-4">
+                                    <span class="text-purple-400">if</span> list1[i][1] < list2[j][1]:<br>
+                                    <span class="ml-4">i += 1</span><br>
+                                    <span class="text-purple-400">else</span>:<br>
+                                    <span class="ml-4">j += 1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Interactive Demo
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Interactive Walkthrough</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="font-mono text-sm mb-6 text-stone-700">
+                                firstList = [[0,2], [5,10], [13,23]]<br>
+                                secondList = [[1,5], [8,12]]
+                            </div>
+                            
+                            <div id="demo-display" class="bg-white p-6 rounded-xl min-h-[150px] flex items-center justify-center mb-6">
+                                <p class="text-stone-400">Click "Step" to begin...</p>
+                            </div>
+                            
+                            <div id="demo-result" class="bg-stone-800 text-green-400 p-4 rounded-xl font-mono text-sm mb-6">
+                                result = []
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetDemo()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200 transition">Reset</button>
+                                <button onclick="nextDemo()" class="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 shadow-lg flex items-center gap-2 transition">
+                                    Step <span class="material-symbols-outlined">play_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. Why It Works
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Why max/min Works for All Cases</h2>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded-xl shadow border-l-4 border-green-500">
+                                <div class="font-bold text-green-700 mb-2">Case 1: A overlaps start of B</div>
+                                <div class="font-mono text-sm text-stone-600">[---A---] [---B---] → Intersection: [B.start, A.end]</div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-xl shadow border-l-4 border-blue-500">
+                                <div class="font-bold text-blue-700 mb-2">Case 2: A contains B</div>
+                                <div class="font-mono text-sm text-stone-600">[-------A-------] → Intersection: B itself!</div>
+                                <div class="font-mono text-sm text-stone-600">    [--B--]</div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-xl shadow border-l-4 border-purple-500">
+                                <div class="font-bold text-purple-700 mb-2">Case 3: B contains A</div>
+                                <div class="font-mono text-sm text-stone-600">    [--A--]       → Intersection: A itself!</div>
+                                <div class="font-mono text-sm text-stone-600">[-------B-------]</div>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-xl shadow border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">Case 4: No overlap</div>
+                                <div class="font-mono text-sm text-stone-600">[--A--]     [--B--] → start > end, skip!</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                            <p class="text-amber-800"><strong>💡 The formula handles ALL cases automatically!</strong></p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 8. Tip for Students
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-green-100 px-4 py-2 rounded-full text-green-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">tips_and_updates</span> Tip for Students
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Remember This Formula!</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+                            <div class="bg-stone-100 p-6 rounded-xl font-mono text-lg text-center mb-6">
+                                <div class="text-amber-600">start = <strong>max</strong>(A.start, B.start)</div>
+                                <div class="text-orange-600">end = <strong>min</strong>(A.end, B.end)</div>
+                                <div class="text-green-600 mt-2">if start ≤ end → <strong>valid intersection!</strong></div>
+                            </div>
+                            
+                            <p class="text-stone-700 text-lg">
+                                This simple formula works for ALL overlap scenarios. No need to check multiple cases manually!
+                            </p>
+                        </div>
+                        
+                        <div class="bg-stone-100 p-4 rounded-xl">
+                            <p class="text-stone-700">
+                                <strong>💡 Tip:</strong> The intersection formula is straightforward — focus on understanding why we move the pointer whose interval ends first!
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 9. Complete Code
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complete Solution</h2>
+                        
+                        <div class="bg-stone-900 rounded-2xl p-6 text-left overflow-x-auto">
+                            <pre class="text-sm text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-yellow-400">intervalIntersection</span>(firstList, secondList):
+    result = []
+    i, j = <span class="text-green-400">0</span>, <span class="text-green-400">0</span>
+    
+    <span class="text-purple-400">while</span> i < <span class="text-blue-400">len</span>(firstList) <span class="text-purple-400">and</span> j < <span class="text-blue-400">len</span>(secondList):
+        A = firstList[i]
+        B = secondList[j]
+        
+        <span class="text-gray-500"># Find intersection</span>
+        start = <span class="text-blue-400">max</span>(A[<span class="text-green-400">0</span>], B[<span class="text-green-400">0</span>])
+        end = <span class="text-blue-400">min</span>(A[<span class="text-green-400">1</span>], B[<span class="text-green-400">1</span>])
+        
+        <span class="text-gray-500"># Add if valid</span>
+        <span class="text-purple-400">if</span> start <= end:
+            result.append([start, end])
+        
+        <span class="text-gray-500"># Move pointer with smaller end</span>
+        <span class="text-purple-400">if</span> A[<span class="text-green-400">1</span>] < B[<span class="text-green-400">1</span>]:
+            i += <span class="text-green-400">1</span>
+        <span class="text-purple-400">else</span>:
+            j += <span class="text-green-400">1</span>
+    
+    <span class="text-purple-400">return</span> result</code></pre>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 10. Complexity
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity Analysis</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-green-50 p-8 rounded-2xl border-2 border-green-200 text-center">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-2">Time</div>
+                                <div class="text-4xl font-bold text-green-700 mb-4">O(m + n)</div>
+                                <div class="text-stone-600 text-sm">
+                                    <div>• Each pointer moves once per interval</div>
+                                    <div>• No nested loops!</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-8 rounded-2xl border-2 border-blue-200 text-center">
+                                <div class="text-sm text-blue-600 font-bold uppercase mb-2">Space</div>
+                                <div class="text-4xl font-bold text-blue-700 mb-4">O(1)</div>
+                                <div class="text-stone-600 text-sm">
+                                    <div>• Only two pointers</div>
+                                    <div>• Result space not counted</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 11. Summary
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Takeaways</h2>
+                        
+                        <div class="space-y-4 text-left">
+                            <div class="bg-amber-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-amber-500">
+                                <span class="material-symbols-outlined text-amber-600 text-2xl">looks_one</span>
+                                <span class="text-stone-700">Use <strong>two pointers</strong> for two sorted lists</span>
+                            </div>
+                            
+                            <div class="bg-orange-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-orange-500">
+                                <span class="material-symbols-outlined text-orange-600 text-2xl">looks_two</span>
+                                <span class="text-stone-700"><strong>max(starts), min(ends)</strong> finds the intersection</span>
+                            </div>
+                            
+                            <div class="bg-green-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-green-500">
+                                <span class="material-symbols-outlined text-green-600 text-2xl">looks_3</span>
+                                <span class="text-stone-700">Check <strong>start ≤ end</strong> for valid intersection</span>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-blue-500">
+                                <span class="material-symbols-outlined text-blue-600 text-2xl">looks_4</span>
+                                <span class="text-stone-700">Move pointer whose interval <strong>ends first</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-gradient-to-r from-amber-100 to-orange-100 p-6 rounded-2xl text-center">
+                            <p class="text-lg text-stone-700">Practice with <strong>LC 986</strong> and <strong>LC 1229</strong>!</p>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // Demo state
+        const demoSteps = [
+            { i: 0, j: 0, msg: "i=0, j=0: A=[0,2], B=[1,5]<br>start=max(0,1)=1, end=min(2,5)=2<br>1≤2 ✓ → Add [1,2]<br>A.end(2) < B.end(5) → i++", result: "[[1,2]]" },
+            { i: 1, j: 0, msg: "i=1, j=0: A=[5,10], B=[1,5]<br>start=max(5,1)=5, end=min(10,5)=5<br>5≤5 ✓ → Add [5,5]<br>A.end(10) > B.end(5) → j++", result: "[[1,2], [5,5]]" },
+            { i: 1, j: 1, msg: "i=1, j=1: A=[5,10], B=[8,12]<br>start=max(5,8)=8, end=min(10,12)=10<br>8≤10 ✓ → Add [8,10]<br>A.end(10) < B.end(12) → i++", result: "[[1,2], [5,5], [8,10]]" },
+            { i: 2, j: 1, msg: "i=2, j=1: A=[13,23], B=[8,12]<br>start=max(13,8)=13, end=min(23,12)=12<br>13>12 ✗ → No intersection<br>A.end(23) > B.end(12) → j++", result: "[[1,2], [5,5], [8,10]]" },
+            { i: 2, j: 2, msg: "j=2 out of bounds → DONE!<br><br>Final result: [[1,2], [5,5], [8,10]]", result: "[[1,2], [5,5], [8,10]]", done: true }
+        ];
+
+        function resetDemo() {
+            demoStep = 0;
+            document.getElementById('demo-display').innerHTML = '<p class="text-stone-400">Click "Step" to begin...</p>';
+            document.getElementById('demo-result').textContent = 'result = []';
+        }
+
+        function nextDemo() {
+            if (demoStep >= demoSteps.length) {
+                resetDemo();
+                return;
+            }
+            const step = demoSteps[demoStep];
+            document.getElementById('demo-display').innerHTML = `
+                <div class="text-left">
+                    <div class="${step.done ? 'text-green-600' : 'text-stone-700'} font-mono text-sm">${step.msg}</div>
+                </div>
+            `;
+            document.getElementById('demo-result').textContent = `result = ${step.result}`;
+            demoStep++;
+        }
+
+        function navigate(direction) {
+            currentStep = Math.max(0, Math.min(totalSteps - 1, currentStep + direction));
+            updateUI();
+        }
+
+        function updateUI() {
+            const contentArea = document.getElementById('content-area');
+            contentArea.innerHTML = steps[currentStep].render();
+            
+            // Update progress bar
+            const progress = ((currentStep + 1) / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            // Update dots
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition-all ${i === currentStep ? 'bg-amber-500 scale-125' : 'bg-stone-300'}`;
+                dot.onclick = () => { currentStep = i; updateUI(); };
+                dot.style.cursor = 'pointer';
+                dotsContainer.appendChild(dot);
+            }
+            
+            // Update buttons
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('prev-btn').classList.toggle('opacity-50', currentStep === 0);
+            
+            const nextBtn = document.getElementById('next-btn');
+            if (currentStep === totalSteps - 1) {
+                nextBtn.innerHTML = 'Finish <span class="material-symbols-outlined">check_circle</span>';
+            } else {
+                nextBtn.innerHTML = 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+            }
+        }
+
+        // Initialize
+        updateUI();
+    </script>
+</body>
+</html>
+

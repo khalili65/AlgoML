@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LC 352: Data Stream as Disjoint Intervals - Interactive Lesson</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 { font-family: 'Lora', serif; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        .code-container::-webkit-scrollbar { height: 8px; }
+        .code-container::-webkit-scrollbar-track { background: #1f2937; }
+        .code-container::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-indigo-200 border-2 border-indigo-400 shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-indigo-600 text-2xl">stream</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">LeetCode 352</h1>
+                <span class="text-xs text-stone-500 uppercase tracking-wider font-bold">Data Stream Intervals</span>
+            </div>
+        </div>
+        <div class="px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-bold">Hard</div>
+    </nav>
+
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100 flex flex-col relative min-h-[80vh]">
+        <div class="w-full h-2 bg-stone-100">
+            <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-500 ease-out" style="width: 10%;"></div>
+        </div>
+        <div id="content-area" class="flex-grow p-6 md:p-12 flex flex-col justify-center items-center text-center overflow-y-auto"></div>
+        <div class="bg-stone-50 p-6 border-t border-stone-100 flex justify-between items-center">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 font-bold px-4 py-2 rounded-lg hover:bg-stone-200 disabled:opacity-30 transition">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            <div id="dots-container" class="flex gap-2"></div>
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 9;
+        let demoStep = 0;
+
+        const steps = [
+            {
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-red-100 px-4 py-2 rounded-full text-red-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">warning</span> Hard Problem
+                        </div>
+                        <h1 class="text-4xl md:text-5xl font-bold text-stone-800 mb-6">LC 352: Data Stream as Disjoint Intervals</h1>
+                        <p class="text-xl text-stone-600 mb-8">Insert Interval for single numbers + handle adjacency!</p>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl text-left">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center">Problem Statement</h2>
+                        
+                        <div class="bg-stone-50 p-8 rounded-2xl border border-stone-200 mb-8">
+                            <p class="text-lg text-stone-700 leading-relaxed">
+                                Given a data stream of integers, summarize the numbers seen so far as a list of <strong>disjoint intervals</strong>.
+                            </p>
+                            <ul class="mt-4 space-y-2 text-stone-600">
+                                <li><code class="bg-indigo-100 px-2 py-1 rounded">addNum(val)</code> — Add integer to data stream</li>
+                                <li><code class="bg-blue-100 px-2 py-1 rounded">getIntervals()</code> — Return current disjoint intervals</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl border-2 border-indigo-200 shadow-sm">
+                            <div class="text-sm text-indigo-600 font-bold uppercase mb-3">Example</div>
+                            <div class="font-mono text-sm space-y-1">
+                                <div>addNum(1) → [[1,1]]</div>
+                                <div>addNum(3) → [[1,1], [3,3]]</div>
+                                <div>addNum(7) → [[1,1], [3,3], [7,7]]</div>
+                                <div>addNum(2) → <span class="text-indigo-600 font-bold">[[1,3], [7,7]]</span> ← 1,2,3 merge!</div>
+                                <div>addNum(6) → <span class="text-indigo-600 font-bold">[[1,3], [6,7]]</span> ← 6,7 merge!</div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Key Insight</h2>
+                        
+                        <div class="bg-indigo-50 p-6 rounded-2xl border-2 border-indigo-200 mb-8">
+                            <p class="text-lg text-indigo-800">
+                                Adding number <code class="bg-white px-2 py-1 rounded">val</code> = 
+                                Insert interval <code class="bg-white px-2 py-1 rounded">[val, val]</code>
+                            </p>
+                            <p class="text-indigo-600 mt-2">
+                                But with a twist: <strong>consecutive numbers must merge!</strong>
+                            </p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl border-2 border-stone-200">
+                                <div class="text-stone-700 font-bold mb-3">Standard Insert Interval</div>
+                                <div class="font-mono text-sm space-y-1 text-stone-600">
+                                    <div>Phase 1: end < new.start</div>
+                                    <div>Phase 2: start ≤ new.end</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-indigo-50 p-6 rounded-xl border-2 border-indigo-300">
+                                <div class="text-indigo-700 font-bold mb-3">Modified for Adjacency</div>
+                                <div class="font-mono text-sm space-y-1 text-indigo-600">
+                                    <div>Phase 1: end < val <strong>- 1</strong></div>
+                                    <div>Phase 2: start ≤ val <strong>+ 1</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                            <p class="text-amber-800 text-sm">
+                                <strong>Why?</strong> [1,3] and [4,4] are consecutive (3+1=4), so they should merge to [1,4]!
+                            </p>
+                        </div>
+                        
+                        <div class="mt-4 bg-stone-100 p-4 rounded-xl border border-stone-200">
+                            <p class="text-sm text-stone-700">
+                                <strong>Same logic applies:</strong> When Phase 1 stops (condition becomes false), we know the first half of the overlap/adjacency condition is satisfied, so Phase 2 only checks the other half.
+                            </p>
+                        </div>
+                        
+                        <div class="mt-4 bg-indigo-50 p-3 rounded-xl border border-indigo-200">
+                            <p class="text-xs text-indigo-700">
+                                <strong>💡 Tip:</strong> If the simplified conditions feel confusing, you can use the full overlap/adjacency condition — it's also correct!
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Interactive Demo</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div id="demo-intervals" class="bg-white p-4 rounded-xl mb-4 font-mono text-lg text-indigo-600 min-h-[50px]">
+                                intervals = []
+                            </div>
+                            
+                            <div id="demo-action" class="bg-indigo-50 p-4 rounded-xl mb-6 min-h-[80px] flex items-center justify-center">
+                                <p class="text-stone-400">Click "Add" to simulate adding numbers...</p>
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetDemo()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200">Reset</button>
+                                <button onclick="nextDemo()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg flex items-center gap-2">
+                                    Add <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Modified Conditions</h2>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-blue-50 p-6 rounded-2xl border-l-4 border-blue-500">
+                                <div class="font-bold text-blue-800 mb-2">Phase 1: Before (with gap)</div>
+                                <code class="text-blue-700 font-mono">while interval.end < val - 1</code>
+                                <p class="text-sm text-blue-600 mt-2">
+                                    Ensures at least one number gap between interval and val
+                                </p>
+                            </div>
+                            
+                            <div class="bg-indigo-50 p-6 rounded-2xl border-l-4 border-indigo-500">
+                                <div class="font-bold text-indigo-800 mb-2">Phase 2: Merge (including adjacent)</div>
+                                <code class="text-indigo-700 font-mono">while interval.start ≤ val + 1</code>
+                                <p class="text-sm text-indigo-600 mt-2">
+                                    Catches both overlapping AND adjacent intervals
+                                </p>
+                            </div>
+                            
+                            <div class="bg-green-50 p-6 rounded-2xl border-l-4 border-green-500">
+                                <div class="font-bold text-green-800 mb-2">Phase 3: After</div>
+                                <code class="text-green-700 font-mono">Add all remaining intervals</code>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl h-full flex flex-col">
+                        <h2 class="text-2xl font-bold text-stone-800 mb-6">Complete Solution</h2>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden text-left">
+                            <div class="code-container overflow-auto p-6 text-sm font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">class</span> <span class="text-blue-400">SummaryRanges</span>:
+    <span class="text-purple-400">def</span> <span class="text-blue-400">__init__</span>(self):
+        self.intervals = []
+    
+    <span class="text-purple-400">def</span> <span class="text-blue-400">addNum</span>(self, val: int):
+        result = []
+        i = <span class="text-green-400">0</span>
+        n = <span class="text-blue-400">len</span>(self.intervals)
+        
+        <span class="text-gray-500"># Phase 1: Before (with gap)</span>
+        <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> self.intervals[i][<span class="text-green-400">1</span>] < val - <span class="text-green-400">1</span>:
+            result.<span class="text-blue-400">append</span>(self.intervals[i])
+            i += <span class="text-green-400">1</span>
+        
+        <span class="text-gray-500"># Phase 2: Merge (including adjacent)</span>
+        new_start, new_end = val, val
+        <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> self.intervals[i][<span class="text-green-400">0</span>] <= val + <span class="text-green-400">1</span>:
+            <span class="text-yellow-300">new_start = min(new_start, self.intervals[i][0])</span>
+            <span class="text-yellow-300">new_end = max(new_end, self.intervals[i][1])</span>
+            i += <span class="text-green-400">1</span>
+        result.<span class="text-blue-400">append</span>([new_start, new_end])
+        
+        <span class="text-gray-500"># Phase 3: After</span>
+        <span class="text-purple-400">while</span> i < n:
+            result.<span class="text-blue-400">append</span>(self.intervals[i])
+            i += <span class="text-green-400">1</span>
+        
+        self.intervals = result
+    
+    <span class="text-purple-400">def</span> <span class="text-blue-400">getIntervals</span>(self):
+        <span class="text-purple-400">return</span> self.intervals</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Comparison with Standard Insert</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden">
+                            <div class="grid grid-cols-3 gap-0 text-center text-sm">
+                                <div class="p-4 bg-stone-100 font-bold border-b border-r">Aspect</div>
+                                <div class="p-4 bg-stone-100 font-bold border-b border-r">LC 57 Insert</div>
+                                <div class="p-4 bg-indigo-100 font-bold border-b">LC 352 Data Stream</div>
+                                
+                                <div class="p-4 border-b border-r text-left">Input</div>
+                                <div class="p-4 border-b border-r font-mono">[left, right]</div>
+                                <div class="p-4 border-b font-mono text-indigo-600">val → [val, val]</div>
+                                
+                                <div class="p-4 border-b border-r text-left">Phase 1</div>
+                                <div class="p-4 border-b border-r font-mono">end < start</div>
+                                <div class="p-4 border-b font-mono text-indigo-600">end < val-1</div>
+                                
+                                <div class="p-4 border-b border-r text-left">Phase 2</div>
+                                <div class="p-4 border-b border-r font-mono">start ≤ end</div>
+                                <div class="p-4 border-b font-mono text-indigo-600">start ≤ val+1</div>
+                                
+                                <div class="p-4 border-r text-left">Adjacent</div>
+                                <div class="p-4 border-r">Not merged</div>
+                                <div class="p-4 text-indigo-600 font-bold">Merged!</div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-3xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-indigo-50 p-8 rounded-2xl border-2 border-indigo-200">
+                                <div class="text-sm text-indigo-600 font-bold uppercase mb-2">addNum</div>
+                                <div class="text-4xl font-bold text-indigo-700 mb-2">O(n)</div>
+                                <div class="text-stone-500 text-sm">
+                                    <div>• Single pass through intervals</div>
+                                    <div>• Rebuild result array</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-green-50 p-8 rounded-2xl border-2 border-green-200">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-2">getIntervals</div>
+                                <div class="text-4xl font-bold text-green-700 mb-2">O(1)</div>
+                                <div class="text-stone-500 text-sm">
+                                    <div>• Just return the list</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 bg-amber-50 p-4 rounded-xl text-center">
+                            <p class="text-amber-800 text-sm">
+                                <strong>Optimization:</strong> Use TreeMap/SortedDict for O(log n) addNum
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-3xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Takeaways</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden text-left">
+                            <div class="p-5 border-b border-stone-100 flex items-center gap-4 bg-indigo-50">
+                                <span class="material-symbols-outlined text-indigo-600">lightbulb</span>
+                                <div>
+                                    <div class="font-bold text-stone-800">Single number = [val, val] interval</div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-b border-stone-100 flex items-center gap-4">
+                                <span class="material-symbols-outlined text-amber-600">edit</span>
+                                <div>
+                                    <div class="font-bold text-stone-800">Modify conditions for adjacency</div>
+                                    <div class="text-sm text-stone-500 font-mono">val-1 and val+1</div>
+                                </div>
+                            </div>
+                            <div class="p-5 flex items-center gap-4 bg-green-50">
+                                <span class="material-symbols-outlined text-green-600">pattern</span>
+                                <div>
+                                    <div class="font-bold text-stone-800">Same 3-phase structure!</div>
+                                    <div class="text-sm text-stone-500">Before → Merge → After</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-indigo-100 p-6 rounded-xl text-center">
+                            <p class="text-indigo-800 font-bold">Patterns adapt with small tweaks!</p>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        function init() { resetDemo(); updateUI(); }
+
+        function navigate(direction) {
+            currentStep += direction;
+            if (currentStep < 0) currentStep = 0;
+            if (currentStep >= totalSteps) currentStep = totalSteps - 1;
+            resetDemo();
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            document.getElementById('progress-bar').style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            
+            const nextBtn = document.getElementById('next-btn');
+            if (currentStep === totalSteps - 1) {
+                nextBtn.innerHTML = `Done <span class="material-symbols-outlined">check_circle</span>`;
+                nextBtn.onclick = () => alert("Awesome! LC 352 mastered!");
+            } else {
+                nextBtn.innerHTML = `Next <span class="material-symbols-outlined">arrow_forward</span>`;
+                nextBtn.onclick = () => navigate(1);
+            }
+
+            document.getElementById('dots-container').innerHTML = Array(totalSteps).fill(0).map((_, i) => `
+                <div class="w-2.5 h-2.5 rounded-full transition-all ${i === currentStep ? 'bg-indigo-500 scale-125' : 'bg-stone-300'}"></div>
+            `).join('');
+        }
+
+        function resetDemo() { demoStep = 0; }
+
+        function nextDemo() {
+            const intervals = document.getElementById('demo-intervals');
+            const action = document.getElementById('demo-action');
+            if (!intervals) return;
+            
+            const states = [
+                { intervals: "[[1,1]]", action: `<div><strong>addNum(1)</strong><br>New interval: [1,1]</div>` },
+                { intervals: "[[1,1], [3,3]]", action: `<div><strong>addNum(3)</strong><br>3-1=2 > 1, so gap exists → Add [3,3]</div>` },
+                { intervals: "[[1,1], [3,3], [7,7]]", action: `<div><strong>addNum(7)</strong><br>Gap exists → Add [7,7]</div>` },
+                { intervals: "[[1,3], [7,7]]", action: `<div><strong>addNum(2)</strong><br>2+1=3 touches [3,3], 2-1=1 touches [1,1]<br>Merge: [1,1] + [2] + [3,3] → <span class="text-indigo-600 font-bold">[1,3]</span></div>` },
+                { intervals: "[[1,3], [6,7]]", action: `<div><strong>addNum(6)</strong><br>6+1=7 touches [7,7]<br>Merge: [6] + [7,7] → <span class="text-indigo-600 font-bold">[6,7]</span></div>` },
+                { intervals: "[[1,3], [6,7]]", action: `<div class="text-3xl text-green-600 font-bold">✓ Done!</div>` },
+            ];
+            
+            if (demoStep < states.length) {
+                intervals.innerHTML = `intervals = ${states[demoStep].intervals}`;
+                action.innerHTML = states[demoStep].action;
+                demoStep++;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

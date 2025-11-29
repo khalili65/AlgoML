@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interval Coverage Pattern - Interactive Lesson</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #ecfccb 0%, #d9f99d 50%, #bef264 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(132, 204, 22, 0.4); }
+            50% { box-shadow: 0 0 20px 10px rgba(132, 204, 22, 0.2); }
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .jump-animation {
+            animation: jump 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-lime-200 border-2 border-lime-400 overflow-hidden shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-lime-600 text-2xl">directions_run</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <p class="text-stone-500 text-sm">Interval Coverage Pattern</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Card -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] min-h-[75vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Progress Bar -->
+        <div class="h-2 bg-stone-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-lime-400 to-green-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 flex flex-col items-center justify-center p-8 2xl:p-16 text-center overflow-auto">
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="border-t border-stone-200 px-8 py-4 flex justify-between items-center bg-stone-50">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 px-6 py-2 rounded-lg font-bold hover:bg-stone-200 transition disabled:opacity-50">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            
+            <div id="dots-container" class="flex gap-2"></div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-lime-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-lime-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 12;
+        let demoStep = 0;
+
+        const steps = [
+            {
+                // 0. Intro
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-lime-100 px-4 py-2 rounded-full text-lime-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">directions_run</span> Interval Pattern #6
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold text-stone-800 mb-6">Interval Coverage</h1>
+                        <p class="text-xl text-stone-600 mb-8">Cover a range with <strong>minimum intervals</strong> — the Jump Game strategy!</p>
+                        <div class="bg-lime-50 p-6 rounded-2xl inline-block border-2 border-lime-200">
+                            <p class="text-lime-800">💡 At each position, extend to the <strong>FARTHEST</strong> reachable point!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. The Problem
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Problem</h2>
+                        
+                        <div class="bg-stone-100 p-6 rounded-2xl mb-8">
+                            <p class="text-lg text-stone-700 mb-4">Cover range <strong>[0, target]</strong> with minimum intervals.</p>
+                            <div class="font-mono text-sm bg-stone-800 text-white p-4 rounded-xl">
+                                intervals = [[0,2], [1,5], [1,9], [4,6], [5,9], [8,10]]<br>
+                                target = 10
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline Visualization -->
+                        <div class="bg-white p-6 rounded-2xl shadow-lg">
+                            <div class="relative h-48">
+                                <div class="absolute bottom-4 left-0 right-0 flex justify-between text-xs text-stone-400 font-mono px-4">
+                                    <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span>
+                                </div>
+                                <div class="absolute bottom-8 left-4 right-4 h-0.5 bg-stone-300"></div>
+                                
+                                <div class="absolute top-0 left-[4%] w-[16%] h-6 bg-lime-500 rounded flex items-center justify-center text-white text-xs font-bold">[0,2]</div>
+                                <div class="absolute top-8 left-[12%] w-[32%] h-6 bg-lime-400 rounded flex items-center justify-center text-white text-xs font-bold">[1,5]</div>
+                                <div class="absolute top-16 left-[12%] w-[64%] h-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">[1,9] ✓</div>
+                                <div class="absolute top-24 left-[36%] w-[16%] h-6 bg-lime-400 rounded flex items-center justify-center text-white text-xs font-bold">[4,6]</div>
+                                <div class="absolute top-32 left-[44%] w-[32%] h-6 bg-lime-400 rounded flex items-center justify-center text-white text-xs font-bold">[5,9]</div>
+                                <div class="absolute top-40 left-[68%] w-[16%] h-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-bold">[8,10] ✓</div>
+                            </div>
+                            <p class="text-stone-600 mt-4">Best: <span class="text-green-600 font-bold">[0,2] + [1,9] + [8,10] = 3 intervals</span></p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. The Greedy Insight
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-yellow-100 px-4 py-2 rounded-full text-yellow-800 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">lightbulb</span> The Greedy Insight
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Always Extend to FARTHEST!</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200">
+                                <div class="text-red-600 font-bold text-lg mb-4">❌ Pick [1,5]</div>
+                                <div class="bg-white p-4 rounded-xl">
+                                    <div class="font-mono text-sm mb-2">Covered: [0, 5]</div>
+                                    <div class="text-red-500">Still need more intervals to reach 10!</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-200">
+                                <div class="text-green-600 font-bold text-lg mb-4">✓ Pick [1,9]</div>
+                                <div class="bg-white p-4 rounded-xl">
+                                    <div class="font-mono text-sm mb-2">Covered: [0, 9]</div>
+                                    <div class="text-green-500">Just one more interval to reach 10!</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-lime-100 p-6 rounded-2xl pulse-glow">
+                            <p class="text-lime-800 text-xl font-bold">Pick the interval that extends FARTHEST = Minimize total count!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. Jump Game Connection
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Jump Game Connection</h2>
+                        
+                        <div class="bg-white p-8 rounded-2xl shadow-lg mb-8">
+                            <p class="text-lg text-stone-700 mb-6">This pattern is <strong>identical</strong> to Jump Game II!</p>
+                            
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <div class="bg-lime-50 p-4 rounded-xl">
+                                    <div class="text-lime-700 font-bold mb-2">Interval Coverage</div>
+                                    <ul class="text-sm text-stone-600 text-left space-y-1">
+                                        <li>• Intervals = tiles to lay</li>
+                                        <li>• current_end = covered so far</li>
+                                        <li>• farthest = best option</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-green-50 p-4 rounded-xl">
+                                    <div class="text-green-700 font-bold mb-2">Jump Game II</div>
+                                    <ul class="text-sm text-stone-600 text-left space-y-1">
+                                        <li>• nums[i] = jump range</li>
+                                        <li>• current_end = jump boundary</li>
+                                        <li>• farthest = max reachable</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                            <p class="text-amber-800">
+                                <strong>💡 Same algorithm!</strong> Master one, solve both types of problems.
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. The Pattern
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Pattern</h2>
+                        
+                        <div class="bg-stone-900 text-white p-8 rounded-2xl text-left font-mono">
+                            <div class="text-lime-400 mb-4 text-lg font-bold">INTERVAL COVERAGE PATTERN</div>
+                            <div class="space-y-4">
+                                <div class="bg-lime-900/30 p-4 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-lime-500 rounded-full flex items-center justify-center font-bold shrink-0">1</span>
+                                    <span><strong>SORT</strong> by start time</span>
+                                </div>
+                                <div class="bg-blue-900/30 p-4 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center font-bold shrink-0">2</span>
+                                    <span>current_end = 0, farthest = 0</span>
+                                </div>
+                                <div class="bg-green-900/30 p-4 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center font-bold shrink-0">3</span>
+                                    <span>While current_end < target:<br>
+                                    &nbsp;&nbsp;Find max end where start <= current_end</span>
+                                </div>
+                                <div class="bg-purple-900/30 p-4 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center font-bold shrink-0">4</span>
+                                    <span>if farthest == current_end → return -1 (gap!)</span>
+                                </div>
+                                <div class="bg-orange-900/30 p-4 rounded-lg flex items-center gap-3">
+                                    <span class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center font-bold shrink-0">5</span>
+                                    <span>current_end = farthest, count++</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. Interactive Demo
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Interactive Walkthrough</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="font-mono text-sm mb-6 text-stone-700">
+                                Sorted: [[0,2], [1,5], [1,9], [4,6], [5,9], [8,10]]<br>
+                                Target: 10
+                            </div>
+                            
+                            <div id="demo-display" class="bg-white p-6 rounded-xl min-h-[150px] flex items-center justify-center mb-6">
+                                <p class="text-stone-400">Click "Step" to begin...</p>
+                            </div>
+                            
+                            <div id="demo-result" class="bg-stone-800 text-white p-4 rounded-xl font-mono text-sm mb-6">
+                                count = 0, current_end = 0, farthest = 0
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetDemo()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200 transition">Reset</button>
+                                <button onclick="nextDemo()" class="px-8 py-3 bg-lime-600 text-white rounded-xl font-bold hover:bg-lime-700 shadow-lg flex items-center gap-2 transition">
+                                    Step <span class="material-symbols-outlined">play_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Gap Detection
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Gap Detection</h2>
+                        
+                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200 mb-8">
+                            <div class="text-red-600 font-bold text-lg mb-4">When is it impossible?</div>
+                            <div class="font-mono text-sm bg-white p-4 rounded-xl mb-4">
+                                intervals = [[0,2], [4,6]]<br>
+                                target = 6
+                            </div>
+                            <div class="text-left text-stone-700">
+                                <p>Round 1: current_end = 0 → farthest = 2</p>
+                                <p>Round 2: current_end = 2 → <span class="text-red-600 font-bold">No intervals start at ≤ 2!</span></p>
+                                <p class="mt-2 text-red-600 font-bold">farthest == current_end → GAP!</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-50 p-4 rounded-xl">
+                            <p class="text-green-800">
+                                <strong>Key check:</strong> if farthest == current_end after scanning, return -1
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. Complete Code
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complete Solution</h2>
+                        
+                        <div class="bg-stone-900 rounded-2xl p-6 text-left overflow-x-auto">
+                            <pre class="text-sm text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-yellow-400">minIntervalsToCover</span>(intervals, target):
+    <span class="text-purple-400">if not</span> intervals:
+        <span class="text-purple-400">return</span> <span class="text-green-400">-1</span> <span class="text-purple-400">if</span> target > <span class="text-green-400">0</span> <span class="text-purple-400">else</span> <span class="text-green-400">0</span>
+    
+    <span class="text-gray-500"># Sort by start time</span>
+    intervals.<span class="text-blue-400">sort</span>()
+    
+    count = <span class="text-green-400">0</span>
+    current_end = <span class="text-green-400">0</span>
+    farthest = <span class="text-green-400">0</span>
+    i = <span class="text-green-400">0</span>
+    n = <span class="text-blue-400">len</span>(intervals)
+    
+    <span class="text-purple-400">while</span> current_end < target:
+        <span class="text-gray-500"># Find farthest reachable</span>
+        <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> intervals[i][<span class="text-green-400">0</span>] <= current_end:
+            farthest = <span class="text-blue-400">max</span>(farthest, intervals[i][<span class="text-green-400">1</span>])
+            i += <span class="text-green-400">1</span>
+        
+        <span class="text-gray-500"># Check for gap</span>
+        <span class="text-purple-400">if</span> farthest == current_end:
+            <span class="text-purple-400">return</span> <span class="text-green-400">-1</span>
+        
+        <span class="text-gray-500"># Make the jump</span>
+        current_end = farthest
+        count += <span class="text-green-400">1</span>
+    
+    <span class="text-purple-400">return</span> count</code></pre>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 8. Edge Cases
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Edge Cases</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                                <div class="text-sm text-red-600 font-bold uppercase mb-2">Gap in Coverage</div>
+                                <div class="font-mono text-xs mb-2">[[0,2], [4,6]], target=6</div>
+                                <div class="text-red-600 font-bold">Output: -1</div>
+                                <p class="text-xs text-stone-500 mt-2">Can't reach from 2 to 4</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                                <div class="text-sm text-red-600 font-bold uppercase mb-2">Doesn't Start at 0</div>
+                                <div class="font-mono text-xs mb-2">[[1,3], [2,5]], target=5</div>
+                                <div class="text-red-600 font-bold">Output: -1</div>
+                                <p class="text-xs text-stone-500 mt-2">No interval covers position 0</p>
+                            </div>
+                            
+                            <div class="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-2">Single Interval Covers All</div>
+                                <div class="font-mono text-xs mb-2">[[0,10]], target=5</div>
+                                <div class="text-green-600 font-bold">Output: 1</div>
+                                <p class="text-xs text-stone-500 mt-2">One interval is enough</p>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-6 rounded-xl border-2 border-blue-200">
+                                <div class="text-sm text-blue-600 font-bold uppercase mb-2">Target = 0</div>
+                                <div class="font-mono text-xs mb-2">[[0,2]], target=0</div>
+                                <div class="text-blue-600 font-bold">Output: 0</div>
+                                <p class="text-xs text-stone-500 mt-2">Nothing to cover!</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 9. Common Mistakes
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Common Mistakes</h2>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Not sorting intervals</div>
+                                <p class="text-stone-600 text-sm">Must sort by start time to process in order!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Forgetting gap check</div>
+                                <p class="text-stone-600 text-sm">if farthest == current_end → no progress possible!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Wrong loop condition</div>
+                                <p class="text-stone-600 text-sm">Use < target, not <= target for the outer loop!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Not checking if intervals start at 0</div>
+                                <p class="text-stone-600 text-sm">If no interval covers 0, return -1!</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 10. Complexity
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity Analysis</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-lime-50 p-8 rounded-2xl border-2 border-lime-200 text-center">
+                                <div class="text-sm text-lime-600 font-bold uppercase mb-2">Time Complexity</div>
+                                <div class="text-4xl font-bold text-lime-700 mb-4">O(n log n)</div>
+                                <div class="text-stone-600 text-sm">
+                                    <div>• Sorting: O(n log n)</div>
+                                    <div>• Single pass: O(n)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-green-50 p-8 rounded-2xl border-2 border-green-200 text-center">
+                                <div class="text-sm text-green-600 font-bold uppercase mb-2">Space Complexity</div>
+                                <div class="text-4xl font-bold text-green-700 mb-4">O(1)</div>
+                                <div class="text-stone-600 text-sm">
+                                    <div>• Only a few variables</div>
+                                    <div>• O(log n) for sort stack</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 11. Summary
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Takeaways</h2>
+                        
+                        <div class="space-y-4 text-left">
+                            <div class="bg-lime-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-lime-500">
+                                <span class="material-symbols-outlined text-lime-600 text-2xl">looks_one</span>
+                                <span class="text-stone-700"><strong>Sort by start time</strong></span>
+                            </div>
+                            
+                            <div class="bg-green-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-green-500">
+                                <span class="material-symbols-outlined text-green-600 text-2xl">looks_two</span>
+                                <span class="text-stone-700"><strong>Greedy:</strong> Always extend to the FARTHEST point</span>
+                            </div>
+                            
+                            <div class="bg-teal-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-teal-500">
+                                <span class="material-symbols-outlined text-teal-600 text-2xl">looks_3</span>
+                                <span class="text-stone-700"><strong>Gap check:</strong> if farthest == current_end → return -1</span>
+                            </div>
+                            
+                            <div class="bg-emerald-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-emerald-500">
+                                <span class="material-symbols-outlined text-emerald-600 text-2xl">looks_4</span>
+                                <span class="text-stone-700"><strong>Same as Jump Game II!</strong></span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-gradient-to-r from-lime-100 to-green-100 p-6 rounded-2xl text-center">
+                            <p class="text-lg text-stone-700">Practice with <strong>LC 1024</strong> and <strong>LC 45</strong>!</p>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // Demo state
+        const demoSteps = [
+            { msg: "<strong>Round 1:</strong> current_end = 0<br><br>Check intervals with start ≤ 0:<br>[0,2] → farthest = 2<br><br><span class='text-lime-600 font-bold'>JUMP! current_end = 2</span>", result: "count = 1, current_end = 2, farthest = 2" },
+            { msg: "<strong>Round 2:</strong> current_end = 2<br><br>Check intervals with start ≤ 2:<br>[1,5] → farthest = 5<br>[1,9] → farthest = 9<br><br><span class='text-lime-600 font-bold'>JUMP! current_end = 9</span>", result: "count = 2, current_end = 9, farthest = 9" },
+            { msg: "<strong>Round 3:</strong> current_end = 9<br><br>Check intervals with start ≤ 9:<br>[4,6] → farthest still 9<br>[5,9] → farthest still 9<br>[8,10] → farthest = 10<br><br><span class='text-lime-600 font-bold'>JUMP! current_end = 10</span>", result: "count = 3, current_end = 10, farthest = 10" },
+            { msg: "<span class='text-lime-600 font-bold text-xl'>Done! current_end (10) >= target (10)</span><br><br>Selected: [0,2], [1,9], [8,10]", result: "Answer: 3 intervals", done: true }
+        ];
+
+        function resetDemo() {
+            demoStep = 0;
+            document.getElementById('demo-display').innerHTML = '<p class="text-stone-400">Click "Step" to begin...</p>';
+            document.getElementById('demo-result').textContent = 'count = 0, current_end = 0, farthest = 0';
+        }
+
+        function nextDemo() {
+            if (demoStep >= demoSteps.length) {
+                resetDemo();
+                return;
+            }
+            const step = demoSteps[demoStep];
+            document.getElementById('demo-display').innerHTML = `
+                <div class="text-left">
+                    <div class="font-mono text-sm ${step.done ? 'text-lime-700' : 'text-stone-700'}">${step.msg}</div>
+                </div>
+            `;
+            document.getElementById('demo-result').textContent = step.result;
+            demoStep++;
+        }
+
+        function navigate(direction) {
+            currentStep = Math.max(0, Math.min(totalSteps - 1, currentStep + direction));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            
+            const progress = ((currentStep + 1) / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition-all cursor-pointer ${i === currentStep ? 'bg-lime-500 scale-125' : 'bg-stone-300'}`;
+                dot.onclick = () => { currentStep = i; updateUI(); };
+                dotsContainer.appendChild(dot);
+            }
+            
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('prev-btn').classList.toggle('opacity-50', currentStep === 0);
+            
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.innerHTML = currentStep === totalSteps - 1 
+                ? 'Finish <span class="material-symbols-outlined">check_circle</span>'
+                : 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
+

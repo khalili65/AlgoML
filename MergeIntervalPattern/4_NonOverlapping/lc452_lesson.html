@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LC 452: Minimum Arrows to Burst Balloons - Interactive Lesson</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fef9c3 0%, #fef08a 50%, #fde047 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        @keyframes pop {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .animate-pop {
+            animation: pop 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-yellow-200 border-2 border-yellow-400 overflow-hidden shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-yellow-600 text-2xl">radio_button_unchecked</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <p class="text-stone-500 text-sm">LC 452: Burst Balloons</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Card -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] min-h-[75vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Progress Bar -->
+        <div class="h-2 bg-stone-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 flex flex-col items-center justify-center p-8 2xl:p-16 text-center overflow-auto">
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="border-t border-stone-200 px-8 py-4 flex justify-between items-center bg-stone-50">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 px-6 py-2 rounded-lg font-bold hover:bg-stone-200 transition disabled:opacity-50">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            
+            <div id="dots-container" class="flex gap-2"></div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-yellow-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-yellow-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 10;
+        let walkStep = 0;
+
+        const steps = [
+            {
+                // 0. Intro
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-yellow-100 px-4 py-2 rounded-full text-yellow-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">deployed_code</span> LeetCode Problem
+                        </div>
+                        <h1 class="text-4xl md:text-5xl font-bold text-stone-800 mb-6">LC 452: Minimum Arrows to Burst Balloons</h1>
+                        <p class="text-xl text-stone-600 mb-8">Same pattern as LC 435, different perspective! 🎈</p>
+                        <div class="flex gap-4 justify-center">
+                            <div class="bg-stone-100 p-4 rounded-2xl">
+                                <span class="text-stone-500">Difficulty:</span>
+                                <span class="ml-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full font-bold">Medium</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. Problem Statement
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl text-left">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center">Problem Statement</h2>
+                        
+                        <div class="bg-stone-50 p-8 rounded-2xl border border-stone-200 mb-8">
+                            <p class="text-lg text-stone-700 leading-relaxed">
+                                Balloons are taped to a wall. Each balloon has a horizontal range <code class="bg-stone-200 px-2 py-1 rounded">[x_start, x_end]</code>.
+                                <br><br>
+                                An arrow shot at position <code class="bg-stone-200 px-2 py-1 rounded">x</code> bursts all balloons where <code class="bg-stone-200 px-2 py-1 rounded">x_start ≤ x ≤ x_end</code>.
+                                <br><br>
+                                Return the <strong class="text-yellow-600">minimum number of arrows</strong> needed to burst all balloons.
+                            </p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl border-2 border-yellow-200 shadow-sm">
+                                <div class="text-sm text-yellow-600 font-bold uppercase mb-3">Example 1</div>
+                                <div class="font-mono text-xs">
+                                    [[10,16],[2,8],[1,6],[7,12]]<br>
+                                    <span class="text-yellow-600 font-bold mt-2 block">Output: 2</span>
+                                </div>
+                                <p class="text-xs text-stone-500 mt-2">Arrow at x=6 → [1,6],[2,8]<br>Arrow at x=11 → [7,12],[10,16]</p>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl border-2 border-blue-200 shadow-sm">
+                                <div class="text-sm text-blue-600 font-bold uppercase mb-3">Example 2</div>
+                                <div class="font-mono text-xs">
+                                    [[1,2],[2,3],[3,4],[4,5]]<br>
+                                    <span class="text-blue-600 font-bold mt-2 block">Output: 2</span>
+                                </div>
+                                <p class="text-xs text-stone-500 mt-2">Arrow at x=2 → [1,2],[2,3]<br>Arrow at x=4 → [3,4],[4,5]</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. Key Connection
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-green-100 px-4 py-2 rounded-full text-green-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">link</span> Connection to LC 435
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Same Pattern, Different Question!</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8 mb-8">
+                            <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200">
+                                <div class="text-red-600 font-bold text-lg mb-4">LC 435</div>
+                                <p class="text-stone-700">Count intervals to <strong>REMOVE</strong></p>
+                                <div class="mt-4 font-mono text-sm bg-white p-3 rounded-lg">
+                                    min_removals = n - max_kept
+                                </div>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-6 rounded-2xl border-2 border-yellow-200">
+                                <div class="text-yellow-600 font-bold text-lg mb-4">LC 452</div>
+                                <p class="text-stone-700">Count <strong>GROUPS</strong> = arrows needed</p>
+                                <div class="mt-4 font-mono text-sm bg-white p-3 rounded-lg">
+                                    arrows = non_overlapping_groups
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-stone-100 p-6 rounded-2xl">
+                            <p class="text-stone-700 text-lg">
+                                <strong>Key insight:</strong> One arrow bursts all overlapping balloons!<br>
+                                So <span class="text-yellow-600 font-bold">arrows = number of non-overlapping groups</span>
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. Critical Difference: > vs >=
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-red-100 px-4 py-2 rounded-full text-red-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">warning</span> Critical Difference
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Touching = Overlapping Here!</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-8">
+                            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                                <div class="bg-red-50 p-4 rounded-xl">
+                                    <div class="text-red-600 font-bold mb-2">LC 435: use >=</div>
+                                    <div class="font-mono text-sm">
+                                        [1,2] and [2,3]<br>
+                                        2 >= 2 → NOT overlapping
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-yellow-50 p-4 rounded-xl">
+                                    <div class="text-yellow-600 font-bold mb-2">LC 452: use ></div>
+                                    <div class="font-mono text-sm">
+                                        [1,2] and [2,3]<br>
+                                        2 > 2? NO → SAME group!
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-stone-100 p-4 rounded-xl">
+                                <p class="text-stone-700 font-mono text-sm">
+                                    Why? Arrow at x=2 bursts BOTH [1,2] and [2,3]!<br>
+                                    <span class="text-yellow-600">Touching balloons = same group = 1 arrow</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. Interactive Walkthrough
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Step-by-Step Walkthrough</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="font-mono text-sm mb-6 text-stone-700">
+                                points = [[10,16], [2,8], [1,6], [7,12]]<br>
+                                Sorted by end: [[1,6], [2,8], [7,12], [10,16]]
+                            </div>
+                            
+                            <div id="walk-display" class="bg-white p-6 rounded-xl min-h-[150px] flex items-center justify-center mb-6">
+                                <p class="text-stone-400">Click "Step" to begin...</p>
+                            </div>
+                            
+                            <div id="walk-result" class="bg-stone-800 text-yellow-400 p-4 rounded-xl font-mono text-sm mb-6">
+                                arrows = 1, prev_end = 6
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetWalk()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200">Reset</button>
+                                <button onclick="nextWalk()" class="px-8 py-3 bg-yellow-500 text-white rounded-xl font-bold hover:bg-yellow-600 shadow-lg flex items-center gap-2">
+                                    Step <span class="material-symbols-outlined">play_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. Visual with Arrows
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Visual: Where Do Arrows Go?</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-8">
+                            <div class="relative h-48">
+                                <!-- Timeline -->
+                                <div class="absolute bottom-4 left-0 right-0 flex justify-between text-xs text-stone-400 font-mono px-4">
+                                    <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span>
+                                </div>
+                                <div class="absolute bottom-8 left-0 right-0 h-0.5 bg-stone-300"></div>
+                                
+                                <!-- Balloons -->
+                                <div class="absolute top-0 left-[6.25%] w-[31.25%] h-8 bg-blue-400 rounded-full flex items-center justify-center text-white text-xs font-bold">[1,6]</div>
+                                <div class="absolute top-10 left-[12.5%] w-[37.5%] h-8 bg-green-400 rounded-full flex items-center justify-center text-white text-xs font-bold">[2,8]</div>
+                                <div class="absolute top-20 left-[43.75%] w-[31.25%] h-8 bg-orange-400 rounded-full flex items-center justify-center text-white text-xs font-bold">[7,12]</div>
+                                <div class="absolute top-[120px] left-[62.5%] w-[37.5%] h-8 bg-purple-400 rounded-full flex items-center justify-center text-white text-xs font-bold">[10,16]</div>
+                                
+                                <!-- Arrows -->
+                                <div class="absolute top-0 bottom-8 left-[37.5%] w-0.5 bg-red-500 opacity-70"></div>
+                                <div class="absolute bottom-10 left-[36%] text-red-600 text-xs font-bold">↑ x=6</div>
+                                
+                                <div class="absolute top-0 bottom-8 left-[75%] w-0.5 bg-red-500 opacity-70"></div>
+                                <div class="absolute bottom-10 left-[73%] text-red-600 text-xs font-bold">↑ x=12</div>
+                            </div>
+                            
+                            <div class="mt-8 grid md:grid-cols-2 gap-4">
+                                <div class="bg-red-50 p-4 rounded-xl">
+                                    <div class="text-red-600 font-bold">Arrow 1 at x=6</div>
+                                    <div class="text-sm text-stone-600">Bursts [1,6] and [2,8]</div>
+                                </div>
+                                <div class="bg-red-50 p-4 rounded-xl">
+                                    <div class="text-red-600 font-bold">Arrow 2 at x=12</div>
+                                    <div class="text-sm text-stone-600">Bursts [7,12] and [10,16]</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Complete Solution
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complete Solution</h2>
+                        
+                        <div class="bg-stone-900 rounded-2xl p-6 text-left overflow-x-auto">
+                            <pre class="text-sm text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-yellow-400">findMinArrowShots</span>(points):
+    <span class="text-purple-400">if not</span> points:
+        <span class="text-purple-400">return</span> <span class="text-green-400">0</span>
+    
+    <span class="text-gray-500"># Sort by END</span>
+    points.<span class="text-blue-400">sort</span>(key=<span class="text-purple-400">lambda</span> x: x[<span class="text-green-400">1</span>])
+    
+    arrows = <span class="text-green-400">1</span>
+    prev_end = points[<span class="text-green-400">0</span>][<span class="text-green-400">1</span>]
+    
+    <span class="text-purple-400">for</span> i <span class="text-purple-400">in</span> <span class="text-blue-400">range</span>(<span class="text-green-400">1</span>, <span class="text-blue-400">len</span>(points)):
+        start, end = points[i]
+        
+        <span class="text-purple-400">if</span> start > prev_end:   <span class="text-gray-500"># Note: > not >=</span>
+            arrows += <span class="text-green-400">1</span>        <span class="text-gray-500"># New group</span>
+            prev_end = end
+        <span class="text-gray-500"># else: same group, don't update prev_end</span>
+    
+    <span class="text-purple-400">return</span> arrows</code></pre>
+                        </div>
+                        
+                        <div class="mt-6 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                            <p class="text-yellow-800 text-sm">
+                                <strong>Key difference:</strong> Use <code class="bg-white px-1 rounded">&gt;</code> not <code class="bg-white px-1 rounded">&gt;=</code> because touching = overlapping here!
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. LC 435 vs LC 452 Summary
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">LC 435 vs LC 452</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-stone-100">
+                                    <tr>
+                                        <th class="p-4 font-bold">Aspect</th>
+                                        <th class="p-4 font-bold text-red-600">LC 435</th>
+                                        <th class="p-4 font-bold text-yellow-600">LC 452</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-sm">
+                                    <tr class="border-t">
+                                        <td class="p-4 font-bold">Goal</td>
+                                        <td class="p-4">Min removals</td>
+                                        <td class="p-4">Min arrows</td>
+                                    </tr>
+                                    <tr class="border-t bg-stone-50">
+                                        <td class="p-4 font-bold">Count</td>
+                                        <td class="p-4">Overlapping</td>
+                                        <td class="p-4">Groups</td>
+                                    </tr>
+                                    <tr class="border-t">
+                                        <td class="p-4 font-bold">Touching</td>
+                                        <td class="p-4">NOT overlap (>=)</td>
+                                        <td class="p-4">IS overlap (>)</td>
+                                    </tr>
+                                    <tr class="border-t bg-stone-50">
+                                        <td class="p-4 font-bold">Update prev_end</td>
+                                        <td class="p-4">When keeping</td>
+                                        <td class="p-4">When new group</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 8. Complexity
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-yellow-50 p-8 rounded-2xl border-2 border-yellow-200 text-center">
+                                <div class="text-sm text-yellow-600 font-bold uppercase mb-2">Time</div>
+                                <div class="text-4xl font-bold text-yellow-700 mb-4">O(n log n)</div>
+                                <div class="text-stone-600 text-sm">Sorting dominates</div>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-8 rounded-2xl border-2 border-blue-200 text-center">
+                                <div class="text-sm text-blue-600 font-bold uppercase mb-2">Space</div>
+                                <div class="text-4xl font-bold text-blue-700 mb-4">O(1)</div>
+                                <div class="text-stone-600 text-sm">Constant extra</div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 9. Summary
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Takeaways 🎈</h2>
+                        
+                        <div class="bg-gradient-to-r from-yellow-50 to-amber-100 p-8 rounded-2xl">
+                            <div class="space-y-3 text-left">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-yellow-600">check_circle</span>
+                                    <span><strong>Same pattern as LC 435</strong> — sort by END</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-yellow-600">check_circle</span>
+                                    <span><strong>Count groups</strong> instead of removals</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-yellow-600">check_circle</span>
+                                    <span><strong>Use > not >=</strong> (touching = same group)</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-yellow-600">check_circle</span>
+                                    <span><strong>Don't update prev_end</strong> on overlap</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 bg-stone-900 text-white p-4 rounded-xl text-center">
+                            <span class="text-yellow-400">arrows = number of non-overlapping groups! 🏹</span>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // Walkthrough state
+        const walkSteps = [
+            { msg: "Initialize with first balloon [1,6]", result: "arrows = 1, prev_end = 6" },
+            { msg: "[2,8]: start=2<br>2 > 6? <span class='text-green-600 font-bold'>NO → Same group!</span><br>(prev_end stays 6)", result: "arrows = 1, prev_end = 6" },
+            { msg: "[7,12]: start=7<br>7 > 6? <span class='text-yellow-600 font-bold'>YES → New group!</span>", result: "arrows = 2, prev_end = 12" },
+            { msg: "[10,16]: start=10<br>10 > 12? <span class='text-green-600 font-bold'>NO → Same group!</span>", result: "arrows = 2, prev_end = 12" },
+            { msg: "<span class='text-yellow-600 font-bold text-xl'>Answer: 2 arrows!</span><br><br>Group 1: [1,6], [2,8] → arrow at x=6<br>Group 2: [7,12], [10,16] → arrow at x=12", result: "Final: 2 arrows", done: true }
+        ];
+
+        function resetWalk() {
+            walkStep = 0;
+            document.getElementById('walk-display').innerHTML = '<p class="text-stone-400">Click "Step" to begin...</p>';
+            document.getElementById('walk-result').textContent = 'arrows = 1, prev_end = 6';
+        }
+
+        function nextWalk() {
+            if (walkStep >= walkSteps.length) { resetWalk(); return; }
+            const step = walkSteps[walkStep];
+            document.getElementById('walk-display').innerHTML = `<div class="text-left font-mono text-sm ${step.done ? 'text-yellow-700' : 'text-stone-700'}">${step.msg}</div>`;
+            document.getElementById('walk-result').textContent = step.result;
+            walkStep++;
+        }
+
+        function navigate(direction) {
+            currentStep = Math.max(0, Math.min(totalSteps - 1, currentStep + direction));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            document.getElementById('progress-bar').style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+            
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full cursor-pointer transition-all ${i === currentStep ? 'bg-yellow-500 scale-125' : 'bg-stone-300'}`;
+                dot.onclick = () => { currentStep = i; updateUI(); };
+                dotsContainer.appendChild(dot);
+            }
+            
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('prev-btn').classList.toggle('opacity-50', currentStep === 0);
+            document.getElementById('next-btn').innerHTML = currentStep === totalSteps - 1 
+                ? 'Finish <span class="material-symbols-outlined">check_circle</span>'
+                : 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,146 @@
+The Fixed Sliding Window Pattern
+
+Hello! I am so glad you're here. Today we are going to tackle a problem that comes up constantly in coding interviews and real-world data processing.
+
+Instead of giving you a definition, I want to jump straight into a specific scenario. Let's look at a set of numbers together.
+
+
+
+Imagine you have this list of numbers: 2, 5, 1, 8, 2, 9.
+Your task is to find the largest sum of any 3 consecutive numbers.
+
+Let's try to solve this the way our brains naturally work.
+
+First, we look at the first three numbers: 2 plus 5 plus 1. That equals 8.
+
+Now, we move one step to the right. The next group is 5 plus 1 plus 8. That equals 14. Okay, that's our new winner.
+
+Move again: 1 plus 8 plus 2 is 11.
+
+And the last one: 8 plus 2 plus 9 is 19. That's our final winner.
+
+Now, did you notice something repetitive there? Let's look at that first transition again.
+
+When we moved from the first group to the second group, notice what happened. We added 2 plus 5 plus 1 to get 8. Then we added 5 plus 1 plus 8 to get 14.
+
+We added the 5 and the 1 both times! In a short list, that's fine. But imagine if k was 1,000. You would be re-adding 999 numbers every single time you moved one inch. That is a lot of wasted work.
+
+
+
+Here is the trick—and this is the core of the Sliding Window.
+
+Let's look at that transition one more time.
+We had the group: 2, 5, 1.
+We want the group: 5, 1, 8.
+
+Instead of adding them all up again, look at the edges.
+To get to the new group, we just took the 8—the new number entering on the right—and we dropped the 2—the old number leaving on the left.
+
+So the math becomes: Previous Sum, which was 8, minus the Old number, which was 2, plus the New number, which is 8, equals 14.
+
+If that math feels a little quick or abstract right now, don't worry at all. We are going to repeat this logic a few times because it is the most important part of the pattern. It will click, I promise.
+
+
+
+Now that we've seen why we do it, let's break this down into a repeatable 5-Step Pattern. We can use this on any problem like this.
+
+Step 1: The Initial Window
+We can't slide until we have a starting point. So, we manually calculate the first window. In our example, that was 2 plus 5 plus 1 equals 8.
+
+Step 2: Store the Best
+We save that 8 as our max sum.
+
+Step 3: Iterate
+Now we loop through the rest of the list, one by one.
+
+Step 4: The Slide—this is the Key Concept
+Here is that main concept again. Inside the loop, we update our sum using that formula:
+
+Current Sum equals Previous Sum...
+PLUS the specific number Entering the window...
+MINUS the specific number Leaving the window.
+
+Step 5: Update Best
+Is the new sum bigger than max sum? If yes, save it.
+
+
+
+Before we look at the code, I want to pause and recap the logic one more time to make sure it sticks.
+
+The whole point of the Sliding Window is laziness—efficient laziness! We don't want to re-calculate the middle numbers.
+
+We just ask: Who is coming in? Who is going out?
+
+We Add the Incoming.
+We Subtract the Outgoing.
+
+If you can remember "Add Incoming, Subtract Outgoing," you have mastered 90% of this pattern.
+
+
+
+Let's see how this looks in Pseudo-code. It's actually quite short.
+
+Function Max Sum Subarray, with parameters arr and k:
+
+Step 1: Calculate the first window manually.
+Set current sum to 0.
+For i from 0 to k minus 1:
+    current sum equals current sum plus arr of i.
+
+Step 2: Set initial best.
+max sum equals current sum.
+
+Step 3: Loop through the rest.
+For i from k to length of arr:
+
+    Step 4: THE SLIDE—Add Entering, Remove Leaving.
+    entering equals arr of i.
+    leaving equals arr of i minus k.
+
+    current sum equals current sum plus entering minus leaving.
+
+    Step 5: Update best.
+    max sum equals MAX of max sum and current sum.
+
+Return max sum.
+
+Take a look at Step 4 in the code. That is exactly what we talked about. current sum plus entering minus leaving. That one line saves us from doing thousands of calculations in big datasets.
+
+
+
+Now, you might be thinking: "Okay, I get the math, but how do I know when to use this pattern in an interview or a real project?"
+
+That is a great question. Let's put on our detective hats. There are 3 big clues that shout "Use Sliding Window"!
+
+Clue Number 1: The Data Type
+The problem will usually give you a linear structure—like an Array, which is a list of numbers, or a String, which is a list of characters.
+
+Clue Number 2: The Magic Word "Contiguous"
+This is the most important clue. The problem will ask for a Subarray or a Substring. Ideally, look for the word Contiguous.
+
+This means the elements must be side-by-side. You cannot skip numbers. If you can pick numbers from anywhere in the list, you cannot use Sliding Window.
+
+Clue Number 3: The Fixed Size
+The problem will usually give you a specific number, often called k or size. It will say something like "Find the max sum of a subarray of size 3" or "Find a substring of length k."
+
+So, let's recap those clues:
+
+Is it an Array or String?
+
+Do the items need to be side-by-side? That means Contiguous.
+
+Is there a fixed size, like k?
+
+If you see all three, you have a green light to use the Fixed Sliding Window!
+
+
+So, to wrap up:
+
+We calculated the first chunk.
+We slid the window over by updating only the edges.
+We kept track of the best result.
+
+If the indices logic—like i minus k—feels a little tricky, that is totally normal. In the next video, we will trace the code line-by-line so you can see exactly where the index points at every step.
+
+Great job following along. Let's go try it out.
+

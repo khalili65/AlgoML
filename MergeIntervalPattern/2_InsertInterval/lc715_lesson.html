@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LC 715: Range Module - Interactive Lesson</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 { font-family: 'Lora', serif; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        .code-container::-webkit-scrollbar { height: 8px; }
+        .code-container::-webkit-scrollbar-track { background: #1f2937; }
+        .code-container::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-pink-200 border-2 border-pink-400 shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-pink-600 text-2xl">view_module</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">LeetCode 715</h1>
+                <span class="text-xs text-stone-500 uppercase tracking-wider font-bold">Range Module</span>
+            </div>
+        </div>
+        <div class="px-4 py-2 bg-red-100 text-red-800 rounded-full text-sm font-bold">Hard</div>
+    </nav>
+
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] bg-white rounded-3xl shadow-xl overflow-hidden border border-stone-100 flex flex-col relative min-h-[80vh]">
+        <div class="w-full h-2 bg-stone-100">
+            <div id="progress-bar" class="h-full bg-pink-500 transition-all duration-500 ease-out" style="width: 10%;"></div>
+        </div>
+        <div id="content-area" class="flex-grow p-6 md:p-12 flex flex-col justify-center items-center text-center overflow-y-auto"></div>
+        <div class="bg-stone-50 p-6 border-t border-stone-100 flex justify-between items-center">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 font-bold px-4 py-2 rounded-lg hover:bg-stone-200 disabled:opacity-30 transition">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            <div id="dots-container" class="flex gap-2"></div>
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-pink-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-pink-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 9;
+
+        const steps = [
+            {
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-red-100 px-4 py-2 rounded-full text-red-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">warning</span> Hard Problem
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold text-stone-800 mb-6">LC 715: Range Module</h1>
+                        <p class="text-xl text-stone-600 mb-8">Insert Interval pattern + Remove operation!</p>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl text-left">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6 text-center">Problem Statement</h2>
+                        
+                        <div class="bg-stone-50 p-8 rounded-2xl border border-stone-200 mb-8">
+                            <p class="text-lg text-stone-700 leading-relaxed mb-4">
+                                A <strong>Range Module</strong> tracks ranges of numbers. Implement:
+                            </p>
+                            <ul class="space-y-2 text-stone-600">
+                                <li><code class="bg-pink-100 px-2 py-1 rounded">addRange(left, right)</code> — Add interval [left, right)</li>
+                                <li><code class="bg-blue-100 px-2 py-1 rounded">queryRange(left, right)</code> — True if [left, right) fully tracked</li>
+                                <li><code class="bg-red-100 px-2 py-1 rounded">removeRange(left, right)</code> — Stop tracking [left, right)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl border-2 border-pink-200 shadow-sm">
+                            <div class="text-sm text-pink-600 font-bold uppercase mb-3">Example</div>
+                            <div class="font-mono text-sm space-y-2">
+                                <div>addRange(10, 20) → tracked: [10, 20)</div>
+                                <div>removeRange(14, 16) → tracked: [10, 14), [16, 20)</div>
+                                <div>queryRange(10, 14) → <span class="text-green-600">True</span></div>
+                                <div>queryRange(13, 15) → <span class="text-red-600">False</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Key Insight</h2>
+                        
+                        <div class="bg-pink-50 p-6 rounded-2xl border-2 border-pink-200 mb-6">
+                            <p class="text-lg text-pink-800">
+                                <strong>addRange</strong> = Insert Interval pattern (exactly!)<br>
+                                <strong>removeRange</strong> = Inverse — keep parts <em>outside</em> the range
+                            </p>
+                        </div>
+                        
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 mb-6">
+                            <p class="text-sm text-amber-800">
+                                <strong>Recall:</strong> In the 3-phase pattern, Phase 2's condition <code class="bg-white px-1 rounded">start ≤ new.end</code> works alone because Phase 1 stopping guarantees <code class="bg-white px-1 rounded">new.start ≤ end</code> (the other half of the overlap condition).
+                            </p>
+                        </div>
+                        
+                        <div class="bg-stone-100 p-3 rounded-xl border border-stone-200 mb-8">
+                            <p class="text-xs text-stone-700">
+                                <strong>💡 Tip:</strong> If the simplified condition feels confusing, you can use the full overlap condition — it's also correct!
+                            </p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-green-50 p-6 rounded-xl border-2 border-green-200">
+                                <div class="text-green-700 font-bold mb-3">addRange(left, right)</div>
+                                <div class="text-sm text-green-600">
+                                    <div>1. Add intervals before</div>
+                                    <div>2. Merge overlapping</div>
+                                    <div>3. Add intervals after</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-red-50 p-6 rounded-xl border-2 border-red-200">
+                                <div class="text-red-700 font-bold mb-3">removeRange(left, right)</div>
+                                <div class="text-sm text-red-600">
+                                    <div>For each interval:</div>
+                                    <div>• Keep part before left</div>
+                                    <div>• Keep part after right</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">removeRange Logic</h2>
+                        
+                        <div class="bg-white rounded-2xl p-8 shadow-lg border border-stone-200 mb-8">
+                            <div class="font-mono text-lg mb-6">
+                                Before: [10, 20) → Remove: [14, 16)
+                            </div>
+                            
+                            <div class="flex items-center justify-center gap-4 mb-6">
+                                <div class="bg-green-100 px-6 py-4 rounded-xl border-2 border-green-300">
+                                    <div class="text-xs text-green-600 font-bold">Keep Left</div>
+                                    <div class="text-2xl font-bold text-green-700">[10,14)</div>
+                                </div>
+                                
+                                <div class="bg-red-100 px-6 py-4 rounded-xl border-2 border-red-400">
+                                    <div class="text-xs text-red-600 font-bold">Remove</div>
+                                    <div class="text-2xl font-bold text-red-500 line-through">[14,16)</div>
+                                </div>
+                                
+                                <div class="bg-green-100 px-6 py-4 rounded-xl border-2 border-green-300">
+                                    <div class="text-xs text-green-600 font-bold">Keep Right</div>
+                                    <div class="text-2xl font-bold text-green-700">[16,20)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="font-mono text-lg text-pink-600">
+                                After: [10, 14), [16, 20)
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl h-full flex flex-col">
+                        <h2 class="text-2xl font-bold text-stone-800 mb-6">addRange Implementation</h2>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden text-left">
+                            <div class="code-container overflow-auto p-6 text-sm font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">addRange</span>(self, left, right):
+    result = []
+    i = <span class="text-green-400">0</span>
+    n = <span class="text-blue-400">len</span>(self.intervals)
+    
+    <span class="text-gray-500"># Phase 1: Add before</span>
+    <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> self.intervals[i][<span class="text-green-400">1</span>] < left:
+        result.<span class="text-blue-400">append</span>(self.intervals[i])
+        i += <span class="text-green-400">1</span>
+    
+    <span class="text-gray-500"># Phase 2: Merge overlapping</span>
+    <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> self.intervals[i][<span class="text-green-400">0</span>] <= right:
+        <span class="text-yellow-300">left = min(left, self.intervals[i][0])</span>
+        <span class="text-yellow-300">right = max(right, self.intervals[i][1])</span>
+        i += <span class="text-green-400">1</span>
+    result.<span class="text-blue-400">append</span>([left, right])
+    
+    <span class="text-gray-500"># Phase 3: Add remaining</span>
+    <span class="text-purple-400">while</span> i < n:
+        result.<span class="text-blue-400">append</span>(self.intervals[i])
+        i += <span class="text-green-400">1</span>
+    
+    self.intervals = result</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl h-full flex flex-col">
+                        <h2 class="text-2xl font-bold text-stone-800 mb-6">removeRange Implementation</h2>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden text-left">
+                            <div class="code-container overflow-auto p-6 text-sm font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">removeRange</span>(self, left, right):
+    result = []
+    
+    <span class="text-purple-400">for</span> start, end <span class="text-purple-400">in</span> self.intervals:
+        <span class="text-gray-500"># No overlap: completely before or after</span>
+        <span class="text-purple-400">if</span> end <= left <span class="text-purple-400">or</span> start >= right:
+            result.<span class="text-blue-400">append</span>([start, end])
+        <span class="text-purple-400">else</span>:
+            <span class="text-gray-500"># Overlap: keep parts outside [left, right)</span>
+            
+            <span class="text-gray-500"># Keep left part</span>
+            <span class="text-purple-400">if</span> start < left:
+                <span class="text-yellow-300">result.append([start, left])</span>
+            
+            <span class="text-gray-500"># Keep right part</span>
+            <span class="text-purple-400">if</span> end > right:
+                <span class="text-yellow-300">result.append([right, end])</span>
+    
+    self.intervals = result</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl h-full flex flex-col">
+                        <h2 class="text-2xl font-bold text-stone-800 mb-6">queryRange Implementation</h2>
+                        <div class="flex-grow bg-gray-900 rounded-2xl shadow-2xl overflow-hidden text-left">
+                            <div class="code-container overflow-auto p-6 text-sm font-mono leading-relaxed">
+<pre class="text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-blue-400">queryRange</span>(self, left, right):
+    <span class="text-gray-500"># Find an interval that fully contains [left, right)</span>
+    <span class="text-purple-400">for</span> start, end <span class="text-purple-400">in</span> self.intervals:
+        <span class="text-purple-400">if</span> start <= left <span class="text-purple-400">and</span> right <= end:
+            <span class="text-purple-400">return</span> <span class="text-green-400">True</span>
+        
+        <span class="text-gray-500"># Optimization: early exit</span>
+        <span class="text-purple-400">if</span> start > left:
+            <span class="text-purple-400">break</span>
+    
+    <span class="text-purple-400">return</span> <span class="text-red-400">False</span></code></pre>
+                            </div>
+                        </div>
+                        <div class="mt-4 bg-blue-50 p-4 rounded-xl">
+                            <p class="text-blue-800 text-sm">
+                                <strong>Logic:</strong> Find any interval where start ≤ left AND right ≤ end
+                            </p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-3xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden">
+                            <div class="grid grid-cols-3 gap-0 text-center">
+                                <div class="p-6 border-r border-b border-stone-100">
+                                    <div class="text-sm text-stone-500 font-bold uppercase mb-2">Operation</div>
+                                </div>
+                                <div class="p-6 border-r border-b border-stone-100">
+                                    <div class="text-sm text-stone-500 font-bold uppercase mb-2">Time</div>
+                                </div>
+                                <div class="p-6 border-b border-stone-100">
+                                    <div class="text-sm text-stone-500 font-bold uppercase mb-2">Space</div>
+                                </div>
+                                
+                                <div class="p-6 border-r border-b border-stone-100 bg-green-50">
+                                    <div class="font-bold text-green-700">addRange</div>
+                                </div>
+                                <div class="p-6 border-r border-b border-stone-100 bg-green-50">
+                                    <div class="font-bold text-green-700">O(n)</div>
+                                </div>
+                                <div class="p-6 border-b border-stone-100 bg-green-50">
+                                    <div class="font-bold text-green-700">O(n)</div>
+                                </div>
+                                
+                                <div class="p-6 border-r border-b border-stone-100 bg-blue-50">
+                                    <div class="font-bold text-blue-700">queryRange</div>
+                                </div>
+                                <div class="p-6 border-r border-b border-stone-100 bg-blue-50">
+                                    <div class="font-bold text-blue-700">O(n)</div>
+                                </div>
+                                <div class="p-6 border-b border-stone-100 bg-blue-50">
+                                    <div class="font-bold text-blue-700">O(1)</div>
+                                </div>
+                                
+                                <div class="p-6 border-r border-stone-100 bg-red-50">
+                                    <div class="font-bold text-red-700">removeRange</div>
+                                </div>
+                                <div class="p-6 border-r border-stone-100 bg-red-50">
+                                    <div class="font-bold text-red-700">O(n)</div>
+                                </div>
+                                <div class="p-6 bg-red-50">
+                                    <div class="font-bold text-red-700">O(n)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-3xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Takeaways</h2>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg border border-stone-200 overflow-hidden text-left">
+                            <div class="p-5 border-b border-stone-100 flex items-center gap-4 bg-green-50">
+                                <span class="material-symbols-outlined text-green-600">add</span>
+                                <div>
+                                    <div class="font-bold text-stone-800">addRange = Insert Interval</div>
+                                    <div class="text-sm text-stone-500">Same 3-phase pattern!</div>
+                                </div>
+                            </div>
+                            <div class="p-5 border-b border-stone-100 flex items-center gap-4 bg-red-50">
+                                <span class="material-symbols-outlined text-red-600">remove</span>
+                                <div>
+                                    <div class="font-bold text-stone-800">removeRange = Inverse</div>
+                                    <div class="text-sm text-stone-500">Keep parts outside the range</div>
+                                </div>
+                            </div>
+                            <div class="p-5 flex items-center gap-4 bg-blue-50">
+                                <span class="material-symbols-outlined text-blue-600">search</span>
+                                <div>
+                                    <div class="font-bold text-stone-800">queryRange = Find Container</div>
+                                    <div class="text-sm text-stone-500">Check if any interval fully contains query</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-pink-100 p-6 rounded-xl text-center">
+                            <p class="text-pink-800 font-bold">Hard problem = Simple patterns combined!</p>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        function init() { updateUI(); }
+
+        function navigate(direction) {
+            currentStep += direction;
+            if (currentStep < 0) currentStep = 0;
+            if (currentStep >= totalSteps) currentStep = totalSteps - 1;
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            document.getElementById('progress-bar').style.width = `${((currentStep + 1) / totalSteps) * 100}%`;
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            
+            const nextBtn = document.getElementById('next-btn');
+            if (currentStep === totalSteps - 1) {
+                nextBtn.innerHTML = `Done <span class="material-symbols-outlined">check_circle</span>`;
+                nextBtn.onclick = () => alert("Excellent! LC 715 mastered!");
+            } else {
+                nextBtn.innerHTML = `Next <span class="material-symbols-outlined">arrow_forward</span>`;
+                nextBtn.onclick = () => navigate(1);
+            }
+
+            document.getElementById('dots-container').innerHTML = Array(totalSteps).fill(0).map((_, i) => `
+                <div class="w-2.5 h-2.5 rounded-full transition-all ${i === currentStep ? 'bg-pink-500 scale-125' : 'bg-stone-300'}"></div>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

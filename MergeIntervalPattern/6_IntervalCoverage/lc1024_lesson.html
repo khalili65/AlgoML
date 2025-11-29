@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LC 1024: Video Stitching - Interactive Lesson</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+            color: #44403c;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Lora', serif;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        
+        @keyframes film-roll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .film-strip {
+            animation: film-roll 20s linear infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-6 px-4 md:px-8">
+
+    <!-- Navbar -->
+    <nav class="w-full max-w-[95%] 2xl:max-w-[1800px] flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-amber-200 border-2 border-amber-400 overflow-hidden shadow-md flex items-center justify-center">
+                <span class="material-symbols-outlined text-amber-600 text-2xl">movie</span>
+            </div>
+            <div>
+                <h1 class="font-bold text-stone-800 text-xl leading-none">TechNova</h1>
+                <p class="text-stone-500 text-sm">LC 1024: Video Stitching</p>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Card -->
+    <main id="app-card" class="w-full max-w-[95%] 2xl:max-w-[1800px] min-h-[75vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Progress Bar -->
+        <div class="h-2 bg-stone-200">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-area" class="flex-1 flex flex-col items-center justify-center p-8 2xl:p-16 text-center overflow-auto">
+        </div>
+
+        <!-- Footer Navigation -->
+        <div class="border-t border-stone-200 px-8 py-4 flex justify-between items-center bg-stone-50">
+            <button id="prev-btn" onclick="navigate(-1)" class="flex items-center gap-2 text-stone-400 px-6 py-2 rounded-lg font-bold hover:bg-stone-200 transition disabled:opacity-50">
+                <span class="material-symbols-outlined">arrow_back</span> Previous
+            </button>
+            
+            <div id="dots-container" class="flex gap-2"></div>
+
+            <button id="next-btn" onclick="navigate(1)" class="flex items-center gap-2 bg-amber-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-amber-600 hover:shadow-lg transform active:scale-95 transition">
+                Next <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 10;
+        let demoStep = 0;
+
+        const steps = [
+            {
+                // 0. Intro
+                render: () => `
+                    <div class="animate-fade-in max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-amber-100 px-4 py-2 rounded-full text-amber-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">movie</span> LeetCode 1024
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold text-stone-800 mb-6">Video Stitching</h1>
+                        <p class="text-xl text-stone-600 mb-8">Stitch video clips to cover the entire event — <strong>Interval Coverage</strong> pattern!</p>
+                        <div class="bg-amber-50 p-6 rounded-2xl inline-block border-2 border-amber-200">
+                            <p class="text-amber-800">🎬 Think of it as laying tiles to cover a timeline!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 1. Problem Statement
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">The Problem</h2>
+                        
+                        <div class="bg-stone-100 p-6 rounded-2xl mb-8">
+                            <p class="text-lg text-stone-700 mb-4">Cover the sporting event <strong>[0, time]</strong> with minimum clips.</p>
+                            <div class="font-mono text-sm bg-stone-800 text-white p-4 rounded-xl">
+                                clips = [[0,2], [4,6], [8,10], [1,9], [1,5], [5,9]]<br>
+                                time = 10<br>
+                                Output: 3
+                            </div>
+                        </div>
+                        
+                        <!-- Film Strip Visualization -->
+                        <div class="bg-stone-900 p-6 rounded-2xl overflow-hidden">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="material-symbols-outlined text-amber-400">videocam</span>
+                                <span class="text-amber-400 font-bold">Timeline: [0, 10]</span>
+                            </div>
+                            <div class="relative h-32 bg-stone-800 rounded-xl p-4">
+                                <div class="absolute top-12 left-0 right-0 h-1 bg-amber-900/50"></div>
+                                <div class="absolute top-4 left-[0%] w-[18%] h-8 bg-amber-500 rounded flex items-center justify-center text-xs font-bold text-stone-900">[0,2]</div>
+                                <div class="absolute top-4 left-[8%] w-[72%] h-8 bg-green-500 rounded flex items-center justify-center text-xs font-bold text-white shadow-lg border-2 border-green-300">[1,9] ✓</div>
+                                <div class="absolute top-16 left-[72%] w-[18%] h-8 bg-green-500 rounded flex items-center justify-center text-xs font-bold text-white shadow-lg border-2 border-green-300">[8,10] ✓</div>
+                            </div>
+                            <p class="text-amber-300 mt-4">Answer: <strong>[0,2] + [1,9] + [8,10] = 3 clips</strong></p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 2. Pattern Recall
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <div class="inline-flex items-center gap-2 mb-6 bg-green-100 px-4 py-2 rounded-full text-green-700 font-bold text-sm uppercase tracking-wide">
+                            <span class="material-symbols-outlined">psychology</span> Pattern Recall
+                        </div>
+                        
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Interval Coverage Pattern</h2>
+                        
+                        <div class="bg-stone-900 text-white p-8 rounded-2xl text-left font-mono">
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0">1</span>
+                                    <span>Sort by start time</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0">2</span>
+                                    <span>current_end = 0, farthest = 0</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0">3</span>
+                                    <span>Find max end where start ≤ current_end</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0">4</span>
+                                    <span>if no progress → return -1</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0">5</span>
+                                    <span>Jump: current_end = farthest, count++</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 bg-amber-50 p-4 rounded-xl border border-amber-200">
+                            <p class="text-amber-800">💡 Video clips = intervals to cover timeline [0, time]!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 3. Interactive Walkthrough
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-5xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-6">Walkthrough</h2>
+                        
+                        <div class="bg-stone-100 rounded-3xl p-8">
+                            <div class="font-mono text-sm mb-6 text-stone-700">
+                                Sorted: [[0,2], [1,5], [1,9], [4,6], [5,9], [8,10]]<br>
+                                time = 10
+                            </div>
+                            
+                            <div id="demo-display" class="bg-white p-6 rounded-xl min-h-[150px] flex items-center justify-center mb-6">
+                                <p class="text-stone-400">Click "Step" to begin...</p>
+                            </div>
+                            
+                            <div id="demo-result" class="bg-stone-800 text-white p-4 rounded-xl font-mono text-sm mb-6">
+                                count = 0, current_end = 0
+                            </div>
+                            
+                            <div class="flex gap-4 justify-center">
+                                <button onclick="resetDemo()" class="px-6 py-2 rounded-lg text-stone-500 font-bold hover:bg-stone-200 transition">Reset</button>
+                                <button onclick="nextDemo()" class="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 shadow-lg flex items-center gap-2 transition">
+                                    Step <span class="material-symbols-outlined">play_circle</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 4. Edge Case: Gap
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Edge Case: Gap</h2>
+                        
+                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200 mb-8">
+                            <div class="font-mono text-sm bg-white p-4 rounded-xl mb-4">
+                                clips = [[0,1], [1,2]]<br>
+                                time = 5<br>
+                                Output: -1
+                            </div>
+                            
+                            <div class="relative h-20 bg-white rounded-xl p-4">
+                                <div class="absolute top-8 left-0 right-0 h-0.5 bg-stone-300"></div>
+                                <div class="absolute top-4 left-[0%] w-[16%] h-6 bg-amber-500 rounded text-xs font-bold flex items-center justify-center text-white">[0,1]</div>
+                                <div class="absolute top-4 left-[16%] w-[16%] h-6 bg-amber-500 rounded text-xs font-bold flex items-center justify-center text-white">[1,2]</div>
+                                <div class="absolute top-4 left-[33%] w-[67%] h-6 bg-red-100 border-2 border-dashed border-red-400 rounded flex items-center justify-center text-red-600 text-xs font-bold">GAP!</div>
+                            </div>
+                            
+                            <p class="text-red-600 font-bold mt-4">Can only cover [0,2], can't reach 5!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 5. Edge Case: Doesn't Start at 0
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Edge Case: Doesn't Start at 0</h2>
+                        
+                        <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-200">
+                            <div class="font-mono text-sm bg-white p-4 rounded-xl mb-4">
+                                clips = [[1,3], [2,5]]<br>
+                                time = 5<br>
+                                Output: -1
+                            </div>
+                            
+                            <div class="relative h-20 bg-white rounded-xl p-4">
+                                <div class="absolute top-8 left-0 right-0 h-0.5 bg-stone-300"></div>
+                                <div class="absolute top-4 left-[0%] w-[16%] h-6 bg-red-100 border-2 border-dashed border-red-400 rounded flex items-center justify-center text-red-600 text-xs font-bold">GAP!</div>
+                                <div class="absolute top-4 left-[16%] w-[33%] h-6 bg-amber-500 rounded text-xs font-bold flex items-center justify-center text-white">[1,3]</div>
+                                <div class="absolute top-4 left-[33%] w-[50%] h-6 bg-amber-400 rounded text-xs font-bold flex items-center justify-center text-white">[2,5]</div>
+                            </div>
+                            
+                            <p class="text-red-600 font-bold mt-4">No clip covers position 0!</p>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 6. Complete Solution
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complete Solution</h2>
+                        
+                        <div class="bg-stone-900 rounded-2xl p-6 text-left overflow-x-auto">
+                            <pre class="text-sm text-gray-300"><code><span class="text-purple-400">def</span> <span class="text-yellow-400">videoStitching</span>(clips, time):
+    clips.<span class="text-blue-400">sort</span>()
+    
+    count = <span class="text-green-400">0</span>
+    current_end = <span class="text-green-400">0</span>
+    farthest = <span class="text-green-400">0</span>
+    i = <span class="text-green-400">0</span>
+    n = <span class="text-blue-400">len</span>(clips)
+    
+    <span class="text-purple-400">while</span> current_end < time:
+        <span class="text-gray-500"># Find farthest reachable</span>
+        <span class="text-purple-400">while</span> i < n <span class="text-purple-400">and</span> clips[i][<span class="text-green-400">0</span>] <= current_end:
+            farthest = <span class="text-blue-400">max</span>(farthest, clips[i][<span class="text-green-400">1</span>])
+            i += <span class="text-green-400">1</span>
+        
+        <span class="text-gray-500"># Gap check</span>
+        <span class="text-purple-400">if</span> farthest == current_end:
+            <span class="text-purple-400">return</span> <span class="text-green-400">-1</span>
+        
+        <span class="text-gray-500"># Make the jump</span>
+        current_end = farthest
+        count += <span class="text-green-400">1</span>
+    
+    <span class="text-purple-400">return</span> count</code></pre>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 7. Complexity
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Complexity</h2>
+                        
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="bg-amber-50 p-8 rounded-2xl border-2 border-amber-200 text-center">
+                                <div class="text-sm text-amber-600 font-bold uppercase mb-2">Time</div>
+                                <div class="text-4xl font-bold text-amber-700 mb-4">O(n log n)</div>
+                                <div class="text-stone-600 text-sm">
+                                    <div>• Sorting: O(n log n)</div>
+                                    <div>• Single pass: O(n)</div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-orange-50 p-8 rounded-2xl border-2 border-orange-200 text-center">
+                                <div class="text-sm text-orange-600 font-bold uppercase mb-2">Space</div>
+                                <div class="text-4xl font-bold text-orange-700 mb-4">O(1)</div>
+                                <div class="text-stone-600 text-sm">
+                                    <div>• Only a few variables</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 8. Common Mistakes
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Common Mistakes</h2>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Not sorting clips</div>
+                                <p class="text-stone-600 text-sm">Must sort by start time!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Forgetting gap check</div>
+                                <p class="text-stone-600 text-sm">if farthest == current_end → no progress!</p>
+                            </div>
+                            
+                            <div class="bg-red-50 p-4 rounded-xl border-l-4 border-red-500">
+                                <div class="font-bold text-red-700 mb-2">❌ Not checking time = 0</div>
+                                <p class="text-stone-600 text-sm">If time is 0, return 0 (nothing to cover)!</p>
+                            </div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                // 9. Summary
+                render: () => `
+                    <div class="animate-fade-in w-full max-w-4xl">
+                        <h2 class="text-3xl font-bold text-stone-800 mb-8">Key Takeaways</h2>
+                        
+                        <div class="space-y-4 text-left">
+                            <div class="bg-amber-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-amber-500">
+                                <span class="material-symbols-outlined text-amber-600 text-2xl">looks_one</span>
+                                <span class="text-stone-700">Direct application of <strong>Interval Coverage</strong></span>
+                            </div>
+                            
+                            <div class="bg-orange-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-orange-500">
+                                <span class="material-symbols-outlined text-orange-600 text-2xl">looks_two</span>
+                                <span class="text-stone-700">Sort → Find farthest → Jump</span>
+                            </div>
+                            
+                            <div class="bg-yellow-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-yellow-500">
+                                <span class="material-symbols-outlined text-yellow-600 text-2xl">looks_3</span>
+                                <span class="text-stone-700">Gap detection: if farthest == current_end → -1</span>
+                            </div>
+                            
+                            <div class="bg-lime-50 p-4 rounded-xl flex items-center gap-4 border-l-4 border-lime-500">
+                                <span class="material-symbols-outlined text-lime-600 text-2xl">looks_4</span>
+                                <span class="text-stone-700">O(n log n) time, O(1) space</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8 bg-gradient-to-r from-amber-100 to-orange-100 p-6 rounded-2xl text-center">
+                            <p class="text-lg text-stone-700">Next: Try <strong>LC 45 Jump Game II</strong> — same pattern!</p>
+                        </div>
+                    </div>
+                `
+            }
+        ];
+
+        // Demo state
+        const demoSteps = [
+            { msg: "<strong>Round 1:</strong> current_end = 0<br><br>Clips with start ≤ 0:<br>• [0,2] → farthest = 2<br><br><span class='text-green-600 font-bold'>JUMP to 2!</span>", result: "count = 1, current_end = 2" },
+            { msg: "<strong>Round 2:</strong> current_end = 2<br><br>Clips with start ≤ 2:<br>• [1,5] → farthest = 5<br>• [1,9] → farthest = 9 ✓<br><br><span class='text-green-600 font-bold'>JUMP to 9!</span>", result: "count = 2, current_end = 9" },
+            { msg: "<strong>Round 3:</strong> current_end = 9<br><br>Clips with start ≤ 9:<br>• [4,6] → no improvement<br>• [5,9] → no improvement<br>• [8,10] → farthest = 10 ✓<br><br><span class='text-green-600 font-bold'>JUMP to 10!</span>", result: "count = 3, current_end = 10" },
+            { msg: "<span class='text-amber-600 font-bold text-xl'>🎬 Done! Covered [0, 10]</span><br><br>Clips used: [0,2], [1,9], [8,10]", result: "Answer: 3 clips", done: true }
+        ];
+
+        function resetDemo() {
+            demoStep = 0;
+            document.getElementById('demo-display').innerHTML = '<p class="text-stone-400">Click "Step" to begin...</p>';
+            document.getElementById('demo-result').textContent = 'count = 0, current_end = 0';
+        }
+
+        function nextDemo() {
+            if (demoStep >= demoSteps.length) {
+                resetDemo();
+                return;
+            }
+            const step = demoSteps[demoStep];
+            document.getElementById('demo-display').innerHTML = `
+                <div class="text-left">
+                    <div class="font-mono text-sm ${step.done ? 'text-amber-700' : 'text-stone-700'}">${step.msg}</div>
+                </div>
+            `;
+            document.getElementById('demo-result').textContent = step.result;
+            demoStep++;
+        }
+
+        function navigate(direction) {
+            currentStep = Math.max(0, Math.min(totalSteps - 1, currentStep + direction));
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('content-area').innerHTML = steps[currentStep].render();
+            
+            const progress = ((currentStep + 1) / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            const dotsContainer = document.getElementById('dots-container');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSteps; i++) {
+                const dot = document.createElement('div');
+                dot.className = `w-2 h-2 rounded-full transition-all cursor-pointer ${i === currentStep ? 'bg-amber-500 scale-125' : 'bg-stone-300'}`;
+                dot.onclick = () => { currentStep = i; updateUI(); };
+                dotsContainer.appendChild(dot);
+            }
+            
+            document.getElementById('prev-btn').disabled = currentStep === 0;
+            document.getElementById('prev-btn').classList.toggle('opacity-50', currentStep === 0);
+            
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.innerHTML = currentStep === totalSteps - 1 
+                ? 'Finish <span class="material-symbols-outlined">check_circle</span>'
+                : 'Next <span class="material-symbols-outlined">arrow_forward</span>';
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
+
