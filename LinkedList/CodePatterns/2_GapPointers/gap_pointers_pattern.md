@@ -568,15 +568,92 @@ def rotateRight(head, k):
     return new_head
 ```
 
-**Visual:**
+**Why Do We Connect Tail to Head (Make a "Circle")?**
+
+The key insight is that rotation is just "choosing where to cut" a circular list!
+
 ```
-Rotate by k=2:
-1 → 2 → 3 → 4 → 5
+Original: 1 → 2 → 3 → 4 → 5 → None
+Rotate by k=2: Take last 2 elements, move to front
+Result:   4 → 5 → 1 → 2 → 3 → None
+```
 
-new_tail = node 3 (length - k - 1 = 5 - 2 - 1 = 2 steps from head)
-new_head = node 4
+**Without Circle (The Problem):**
+```
+Step 1: Find where to cut
+1 → 2 → 3 → 4 → 5 → None
+        ↑   ↑
+     cut here
 
-Result: 4 → 5 → 1 → 2 → 3
+Step 2: After cutting, we have two pieces
+1 → 2 → 3 → None    4 → 5 → None
+
+Step 3: Need to connect 5 to 1... but we lost track of 5!
+        We'd need to traverse again to find the tail.
+```
+
+**With Circle (The Solution):**
+```
+Step 1: Connect tail to head FIRST
+        1 → 2 → 3 → 4 → 5
+        ↑               │
+        └───────────────┘
+        Now it's a circle!
+
+Step 2: Find where to cut (new_tail = node 3)
+        1 → 2 → 3 → 4 → 5
+        ↑       ↑       │
+        │   new_tail    │
+        └───────────────┘
+
+Step 3: Cut at new_tail.next = None
+        4 → 5 → 1 → 2 → 3 → None
+        
+Done! No extra traversal needed.
+```
+
+**Step-by-Step Visual:**
+```
+Original: 1 → 2 → 3 → 4 → 5 → None, k=2
+
+Step 1: Find tail while counting length
+        tail = node 5, length = 5
+
+Step 2: k = k % length = 2 (handle k > length)
+
+Step 3: tail.next = head (MAKE CIRCLE)
+        1 → 2 → 3 → 4 → 5
+        ↑               │
+        └───────────────┘
+
+Step 4: Walk (length - k - 1) = 2 steps to find new_tail
+        new_tail = node 3
+
+Step 5: new_head = new_tail.next (node 4)
+        new_tail.next = None (BREAK CIRCLE)
+        
+Result: 4 → 5 → 1 → 2 → 3 → None
+```
+
+**Why is Circle Helpful?**
+```
+┌─────────────────────────────────────────────────────────────┐
+│   BENEFITS OF THE CIRCLE APPROACH                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   1. We already found tail while counting length            │
+│      → Reuse it instead of traversing again!                │
+│                                                             │
+│   2. After connecting tail→head, list is continuous         │
+│      → Cut anywhere, get proper ends automatically          │
+│                                                             │
+│   3. Rotation = "choosing where to cut a circle"            │
+│      → Simple mental model!                                 │
+│                                                             │
+│   4. Only ONE traversal needed (to find length + tail)      │
+│      → O(n) time, O(1) space                                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
